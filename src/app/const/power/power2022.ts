@@ -1006,7 +1006,7 @@ export const power2022 = {
             "“In so many workplaces, whether it’s in publishing or in museums or universities, people had the idea that they were lucky to be in these prestigious institutions,” Maida Rosenstein, president of American union chapter UAW Local 2110, told ArtReview [https://artreview.com/how-to-unionize-the-artworld/]. “It was a given that you should accept low salaries and poor treatment.” That acquiescence has become increasingly rare in the artworld, where union membership among artists and museum workers is booming. News of unionisation at US institutions has become a daily occurrence, and the Culture Group chapter of the Public and Commercial Services Union in the UK has seen an influx in members (who will be part of a cross-industry nationwide strike at the end of the year). Institutional-specific campaigns like A Better Guggenheim and Barbican Stories are catalysing senior-management changes, while collective action is taking shape with artists groups such as Art Workers Italia, BBK Berlin and Za K.R.U.H. Croatia, as well as other forms of self-organising across the globe, where increasingly there is a recognition of the work in artwork.",
           excerpt: "Collective action among artists and museum workers",
           artist_category: { name: "Activist Movement" },
-          nationality: { name: "ITL" },
+          nationality: { name: "ITL-GB" },
           power_100_edition: [{ name: "2022" }],
           acf: {
             artist_power_100: [
@@ -1356,7 +1356,7 @@ export const power2022 = {
           excerpt:
             "Artists and intellectuals protest the crackdown on artistic freedom in Cuba",
           artist_category: { name: "Artist Collective" },
-          nationality: { name: "CUBA" },
+          nationality: { name: "CU" },
           power_100_edition: [{ name: "2021" }, { name: "2022" }],
           acf: {
             artist_power_100: [
@@ -2698,7 +2698,7 @@ export const power2022 = {
           excerpt:
             "Multidisciplinary research agency investigating human rights violations",
           artist_category: { name: "Artist Collective" },
-          nationality: { name: "ITL" },
+          nationality: { name: "ITL-GB" },
           power_100_edition: [
             { name: "2020" },
             { name: "2021" },
@@ -3906,7 +3906,7 @@ export const power2022 = {
           excerpt:
             "French-Algerian artist taking on colonialism and its legacies",
           artist_category: { name: "Artist" },
-          nationality: { name: "FR-ALGR" },
+          nationality: { name: "DZ" },
           power_100_edition: [
             { name: "2017" },
             { name: "2018" },
@@ -6567,7 +6567,7 @@ export const power2022 = {
           CM: 1,
           "CM-DE": 1,
           CR: 1,
-          CUBA: 1,
+          CU: 1,
           "DE-CH": 1,
           "DE-US": 1,
           DK: 1,

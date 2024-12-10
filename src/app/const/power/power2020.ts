@@ -176,7 +176,7 @@ export const power2020 = {
             "The journalist, artist and activist has continued to raise awareness of the persecution of Kurds via a series of solo exhibitions in Italy at Padiglione d’Arte Contemporanea and Prometeo Gallery, both in Milan, while her work was included in shows at Cruce, Madrid, Kiosk, Berlin, Photobastei, Zürich, as well as in a group exhibition at the Criminal Police Department Mühleweg, Zürich. Earlier this year, Doğan told ArtReview that ‘In sexist discourses, the earth is personified as a woman’s body, becoming, like a woman’s body, something to be possessed. I draw and paint women who oppose this fate’. Her opposition has led her to serve time in prison on different occasions, and in Prison n°5, a graphic novel she released this year (and for which she was awarded the 2021 Le Soir Prize for News Report Comic Strips), she returns to her experience of incarceration at Diyarbakır prison. Zehra. The girl who painted the war, a children’s novel by Antonella De Biasi based on her life story, also landed in bookstores, with illustrations by Doğan.",
           excerpt: "Award-winning journalist and artist ",
           artist_category: { name: "Artist" },
-          nationality: { name: "KU" },
+          nationality: { name: "TR" },
           power_100_edition: [{ name: "2020" }, { name: "2021" }],
           acf: {
             artist_power_100: [
@@ -2189,7 +2189,7 @@ export const power2020 = {
           excerpt:
             "Multidisciplinary research agency investigating human rights violations",
           artist_category: { name: "Artist Collective" },
-          nationality: { name: "ITL" },
+          nationality: { name: "ITL-GB" },
           power_100_edition: [
             { name: "2020" },
             { name: "2021" },

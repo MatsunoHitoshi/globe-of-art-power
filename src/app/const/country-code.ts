@@ -35,10 +35,26 @@ const countries = [
   { country: "TH", lat: 15.87, lon: 100.9925 },
   { country: "UA", lat: 48.3794, lon: 31.1656 },
   { country: "UAE", lat: 23.4241, lon: 53.8478 },
+  { country: "KE", lat: -1.2864, lon: 36.8172 },
+  { country: "BE", lat: 50.8503, lon: 4.3517 },
+  { country: "GT", lat: 15.7835, lon: -90.2308 },
+  { country: "AT", lat: 47.5162, lon: 14.5501 },
+  { country: "GN", lat: 9.9456, lon: -9.6966 },
+  { country: "MA", lat: 31.7917, lon: -7.0926 },
+  { country: "CU", lat: 21.5218, lon: -77.7812 },
+  { country: "PH", lat: 12.8797, lon: 121.774 },
+  { country: "DK", lat: 56.2639, lon: 9.5018 },
+  { country: "DZ", lat: 28.0339, lon: 1.6596 },
+  { country: "RO", lat: 45.9432, lon: 24.9668 },
+  { country: "TR", lat: 38.9637, lon: 35.2433 },
+  { country: "HU", lat: 47.1625, lon: 19.5033 },
+  { country: "RU", lat: 61.524, lon: 105.3188 },
 ];
 
 export const getCountryLocation = (code: string) => {
-  return countries.find((data) => {
+  const res = countries.find((data) => {
     return data.country === code;
   });
+  if (!res) console.log(code, " <- not found");
+  return res;
 };

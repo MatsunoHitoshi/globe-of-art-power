@@ -924,7 +924,7 @@ export const power2023 = {
             "Moulton told The Sydney Morning Herald that her curatorial work over the last 15 years at Victoria Museums ‘is based on relationships and ensuring that the community feels heard and supported… I love my people’. From 2015 to this September she was in charge of the 4,000-strong historical and contemporary South Eastern Australian First Peoples Collections. Moulton is currently deputy chair of Shepparton Art Museum and is a board member for the First Nations nonprofit Adam Briggs Foundation. As senior curator and artistic associate for Melbourne’s Rising festival, she curated Shadow Spirit, an exhibition of immersive commissions by First Nation artists installed in an abandoned train station in June, which will tour to Adelaide; this summer, Moulton also cocurated More Than a Tarrang (tree): Memory, Material and Cultural Agency at Melbourne Museum. She has spoken of the ‘overwhelming sadness’ she feels seeing looted or sacred indigenous objects in colonial museums. Now the British institutional world will hear her voice louder: she has recently been appointed Tate Modern’s adjunct curator in First Nations and Indigenous Art.",
           excerpt: "Prolific curator of First Nations and Indigenous art",
           artist_category: { name: "Curator" },
-          nationality: { name: "INDIG-YY" },
+          nationality: { name: "AU" },
           power_100_edition: [{ name: "2023" }],
           acf: {
             artist_power_100: [
@@ -978,7 +978,7 @@ export const power2023 = {
             "‘How can I put out this call for people who are not recognised as artists?’ Benites asked the environmental journalism platform Sumaúma this year. The curator was already the most visible promoter of Brazilian Indigenous artmaking and its intersection with other communities previously ignored from the canon. She was the first Indigenous curator at the Museu de Arte de São Paulo, but quit last year [https://artreview.com/brazils-first-institutional-indigenous-curator-quits-over-censorship-row-sandra-benites/] after a series of photographs representing leftwing workers and Indigenous rights movements were cut from a show (the museum denied censorship, saying the works were delivered too late). In April she cocurated the first Bienal das Amazônias in Belém, exposing ‘the reality of the Amazons, especially around the idea of fetish the Amazon represents’. As that opened, and with Nhé ẽ Se, an exhibition cocurated with artist Sallisa Rosa at Caixa Cultural Brasilia already in the works, she became the new director of visual arts at Funarte, a government-aligned foundation, giving her immense influence over the country’s visual arts budget and policy, and marking her out as a model for Indigenous curating internationally.",
           excerpt: "Promoting Brazilian Indigenous artmaking",
           artist_category: { name: "Curator" },
-          nationality: { name: "INDIG-GÑ" },
+          nationality: { name: "BR" },
           power_100_edition: [{ name: "2023" }],
           acf: {
             artist_power_100: [
@@ -2921,7 +2921,7 @@ export const power2023 = {
           excerpt:
             "Multidisciplinary research agency investigating human rights violations",
           artist_category: { name: "Artist Collective" },
-          nationality: { name: "ITL" },
+          nationality: { name: "ITL-GB" },
           power_100_edition: [
             { name: "2020" },
             { name: "2021" },
