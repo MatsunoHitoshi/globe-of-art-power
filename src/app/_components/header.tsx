@@ -27,7 +27,7 @@ export const Header = ({ selectedYear, setSelectedYear }: HeaderProps) => {
         <div className="flex flex-row items-center justify-between">
           <div className="text-lg font-bold">The Globe of Art Power</div>
 
-          <div className="w-52">
+          <div className="w-36">
             <Listbox value={selectedYear} onChange={setSelectedYear}>
               <ListboxButton
                 className={clsx(
@@ -45,7 +45,7 @@ export const Header = ({ selectedYear, setSelectedYear }: HeaderProps) => {
                 anchor="bottom"
                 transition
                 className={clsx(
-                  "w-[var(--button-width)] rounded-xl border border-white/5 bg-white/5 p-1 [--anchor-gap:var(--spacing-1)] focus:outline-none",
+                  "z-20 w-[var(--button-width)] rounded-xl border border-white/5 bg-slate-700/30 p-1 [--anchor-gap:var(--spacing-1)] focus:outline-none",
                   "transition duration-100 ease-in data-[leave]:data-[closed]:opacity-0",
                 )}
               >

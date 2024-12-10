@@ -6,7 +6,13 @@ import { useWindowSize } from "@/app/_hooks/use-window-size";
 import { scaleSequentialSqrt, interpolateYlOrRd } from "d3";
 
 import dynamic from "next/dynamic";
-import { power2024 } from "../const/power";
+import {
+  power2024,
+  power2023,
+  power2022,
+  power2021,
+  power2020,
+} from "../const/power";
 import { getCountryLocation } from "../const/country-code";
 import { Header } from "./header";
 import type { SelectOption } from "../types/types";
@@ -51,50 +57,62 @@ export const PageContent = () => {
     //   .then(setSizeData)
     //   .catch((error) => console.error("CSVの読み込みに失敗しました:", error));
 
-    const artistsWithLocation = power2024.results.flatMap((item) =>
-      item.hits
-        .map((hit) => {
-          if (hit.acf.artist_power_100[0]) {
-            const c_name = hit.nationality.name.split("-");
-            const artistPos = hit.acf.artist_power_100.find((i) => {
-              return year.name === i.edition.name;
-            })?.place;
+    const powerData = {
+      "2024": power2024,
+      "2023": power2023,
+      "2022": power2022,
+      "2021": power2021,
+      "2020": power2020,
+    }[year.name];
 
-            return {
-              pos: 101 - (artistPos ?? 0),
-              ...getCountryLocation(c_name[c_name.length - 1] ?? ""),
-            };
+    if (powerData) {
+      const artistsWithLocation = powerData.results.flatMap((item) =>
+        item.hits
+          .map((hit) => {
+            if (hit.acf.artist_power_100[0]) {
+              const c_name = hit.nationality.name.split("-");
+              const artistPos = hit.acf.artist_power_100.find((i) => {
+                return year.name === i.edition.name;
+              })?.place;
+
+              return {
+                pos: 101 - (artistPos ?? 0),
+                ...getCountryLocation(c_name[c_name.length - 1] ?? ""),
+              };
+            }
+            return null;
+          })
+          .filter((x): x is ArtistLocation => x !== null),
+      );
+      console.log(artistsWithLocation);
+
+      const unifiedArtists = artistsWithLocation.reduce<ArtistLocation[]>(
+        (acc, current) => {
+          const x = acc.find((item) => item.country === current.country);
+          if (!x) {
+            return acc.concat([current]);
+          } else {
+            x.pos += current.pos;
+            return acc;
           }
-          return null;
-        })
-        .filter((x): x is ArtistLocation => x !== null),
-    );
-    console.log(artistsWithLocation);
+        },
+        [],
+      );
 
-    const unifiedArtists = artistsWithLocation.reduce<ArtistLocation[]>(
-      (acc, current) => {
-        const x = acc.find((item) => item.country === current.country);
-        if (!x) {
-          return acc.concat([current]);
-        } else {
-          x.pos += current.pos;
-          return acc;
-        }
-      },
-      [],
-    );
+      console.log(unifiedArtists);
 
-    console.log(unifiedArtists);
-
-    setSizeData(
-      unifiedArtists.map((country) => {
-        return {
-          lat: country.lat ?? 0,
-          lng: country.lon ?? 0,
-          pos: country.pos * 8000,
-        };
-      }),
-    );
+      setSizeData(
+        unifiedArtists.map((country) => {
+          return {
+            lat: country.lat ?? 0,
+            lng: country.lon ?? 0,
+            pos: country.pos * 8000,
+          };
+        }),
+      );
+    } else {
+      console.log("Data is not found");
+    }
   }, [year]);
 
   useLayoutEffect(() => {
@@ -118,14 +136,6 @@ export const PageContent = () => {
         bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
         backgroundImageUrl="//unpkg.com/three-globe/example/img/night-sky.png"
         // backgroundColor="#000000"
-        // labelsData={places}
-        // labelColor={() => "rgba(255, 165, 0, 0.75)"}
-        // labelLat={(d: any) => d.properties.latitude}
-        // labelLng={(d: any) => d.properties.longitude}
-        // labelText={(d: any) => d.properties.name}
-        // labelSize={(d: any) => Math.sqrt(d.properties.pop_max) * 4e-4}
-        // labelDotRadius={(d: any) => Math.sqrt(d.properties.pop_max) * 4e-4}
-        labelResolution={2}
         objectRotation={{ x: 50, y: 50, z: 1 }}
         // from word-population example
         hexBinPointsData={sizeData}
