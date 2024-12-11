@@ -198,7 +198,9 @@ export const PageContent = () => {
         hexTopColor={(d) => weightColor(d.sumWeight)}
         hexSideColor={(d) => weightColor(d.sumWeight)}
         hexBinMerge={true}
+        hexTransitionDuration={1000}
         enablePointerInteraction={false}
+        showGraticules={true}
       />
     </>
   );
