@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { GlobeMethods } from "react-globe.gl";
 import { useWindowSize } from "@/app/_hooks/use-window-size";
-import { scaleSequentialSqrt, interpolateYlOrRd } from "d3";
+import { scaleSequentialSqrt, interpolateInferno } from "d3";
 
 import dynamic from "next/dynamic";
 import {
@@ -22,6 +22,12 @@ import {
   power2012,
   power2011,
   power2010,
+  power2009,
+  power2008,
+  power2007,
+  power2006,
+  power2005,
+  power2004,
 } from "../const/power";
 import { getCountryLocation } from "../const/country-code";
 import { Header } from "./header";
@@ -63,6 +69,12 @@ const powerData = (y: string) => {
     "2012": power2012,
     "2011": power2011,
     "2010": power2010,
+    "2009": power2009,
+    "2008": power2008,
+    "2007": power2007,
+    "2006": power2006,
+    "2005": power2005,
+    "2004": power2004,
   }[y];
 };
 
@@ -89,22 +101,22 @@ const handler = (data: typeof power2024, y: string) => {
   );
   console.log(artistsWithLocation);
 
-  const unifiedArtists = artistsWithLocation.reduce<ArtistLocation[]>(
-    (acc, current) => {
-      const x = acc.find((item) => item.country === current.country);
-      if (!x) {
-        return acc.concat([current]);
-      } else {
-        x.pos += current.pos;
-        return acc;
-      }
-    },
-    [],
-  );
+  // const unifiedArtists = artistsWithLocation.reduce<ArtistLocation[]>(
+  //   (acc, current) => {
+  //     const x = acc.find((item) => item.country === current.country);
+  //     if (!x) {
+  //       return acc.concat([current]);
+  //     } else {
+  //       x.pos += current.pos;
+  //       return acc;
+  //     }
+  //   },
+  //   [],
+  // );
 
-  console.log(unifiedArtists);
+  // console.log(unifiedArtists);
 
-  return unifiedArtists.map((country) => {
+  return artistsWithLocation.map((country) => {
     return {
       lat: country.lat ?? 0,
       lng: country.lon ?? 0,
@@ -164,7 +176,7 @@ export const PageContent = () => {
     }
   }, []);
 
-  const weightColor = scaleSequentialSqrt(interpolateYlOrRd).domain([0, 1e7]);
+  const weightColor = scaleSequentialSqrt(interpolateInferno).domain([0, 1e7]);
 
   return (
     <>
