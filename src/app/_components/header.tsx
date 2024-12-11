@@ -47,7 +47,9 @@ export const Header = ({ selectedYear, setSelectedYear }: HeaderProps) => {
     <>
       <div className="absolute z-10 w-full bg-slate-700/30 p-4 text-white backdrop-blur-sm">
         <div className="flex flex-row items-center justify-between">
-          <div className="text-lg font-bold">The Globe of Art Power</div>
+          <div className="text-base font-bold md:text-lg">
+            The Globe of Art Power
+          </div>
 
           <div className="flex flex-row items-center gap-1">
             <button
