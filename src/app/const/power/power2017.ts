@@ -599,7 +599,7 @@ export const power2017 = {
           excerpt:
             "French-Algerian artist taking on colonialism and its legacies",
           artist_category: { name: "Artist" },
-          nationality: { name: "FR-ALGR" },
+          nationality: { name: "DZ" },
           power_100_edition: [
             { name: "2017" },
             { name: "2018" },

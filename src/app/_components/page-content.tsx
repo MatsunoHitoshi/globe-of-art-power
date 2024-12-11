@@ -49,7 +49,7 @@ type DataType = {
 type ArtistLocation = {
   country?: string;
   lat?: number;
-  lon?: number;
+  lng?: number;
   pos: number;
 };
 const powerData = (y: string) => {
@@ -78,7 +78,7 @@ const powerData = (y: string) => {
   }[y];
 };
 
-const handler = (data: typeof power2024, y: string) => {
+const handler = (data: typeof power2024, y: string, scale: number) => {
   const artistsWithLocation = data.results.flatMap((item) =>
     item.hits
       .map((hit) => {
@@ -99,7 +99,7 @@ const handler = (data: typeof power2024, y: string) => {
       })
       .filter((x): x is ArtistLocation => x !== null),
   );
-  console.log(artistsWithLocation);
+  console.log("year-", y, ":\n", artistsWithLocation);
 
   // const unifiedArtists = artistsWithLocation.reduce<ArtistLocation[]>(
   //   (acc, current) => {
@@ -119,8 +119,8 @@ const handler = (data: typeof power2024, y: string) => {
   return artistsWithLocation.map((country) => {
     return {
       lat: country.lat ?? 0,
-      lng: country.lon ?? 0,
-      pos: country.pos * 8000,
+      lng: country.lng ?? 0,
+      pos: country.pos * scale,
     };
   });
 };
@@ -148,21 +148,24 @@ export const PageContent = () => {
     const yearData = powerData(year.name);
 
     if (yearData) {
-      const pointsData = handler(yearData as typeof power2024, year.name);
+      const pointsData = handler(yearData as typeof power2024, year.name, 8000);
       setSizeData(pointsData);
     } else if (year.name === "ALL") {
-      const array: DataType[] = [];
-      for (let i = 2010; i <= 2024; i++) {
+      // const array: DataType[] = [];
+      let allPointsData: DataType[] = [];
+      for (let i = 2004; i <= 2024; i++) {
         const yearData = powerData(i.toString());
         if (yearData) {
           const pointsData = handler(
             yearData as typeof power2024,
             i.toString(),
+            800,
           );
-          array.concat(pointsData);
-          setSizeData(sizeData.concat(pointsData));
+          allPointsData = allPointsData.concat(pointsData);
         }
       }
+      setSizeData(allPointsData);
+      console.log("finalData:", allPointsData.length, " \n", allPointsData);
     } else {
       console.log("Data is not found");
     }
