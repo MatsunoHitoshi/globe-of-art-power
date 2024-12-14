@@ -6,6 +6,7 @@ import {
   ArrowsPointingOutIcon,
   ArrowsPointingInIcon,
 } from "@heroicons/react/20/solid";
+import { countyCodes } from "../const/country-code";
 
 export const Modal = ({
   focusedData,
@@ -25,7 +26,11 @@ export const Modal = ({
     >
       <div className="sticky top-0 flex flex-row items-center justify-between">
         <div className="text-xl font-bold">
-          Country Code: {focusedData?.[0]?.country}
+          {
+            countyCodes.find((c) => {
+              return c.code === focusedData?.[0]?.country;
+            })?.name
+          }
         </div>
         <div className="flex flex-row items-center gap-2">
           <button
