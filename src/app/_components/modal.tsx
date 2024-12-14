@@ -25,13 +25,7 @@ export const Modal = ({
       className={`absolute bottom-0 z-20 flex ${isSpread ? "h-[580px]" : "h-80"} w-full flex-col gap-2 rounded-t-2xl bg-slate-700/30 px-6 pt-8 text-white backdrop-blur-xl`}
     >
       <div className="sticky top-0 flex flex-row items-center justify-between">
-        <div className="text-xl font-bold">
-          {
-            countyCodes.find((c) => {
-              return c.code === focusedData?.[0]?.country;
-            })?.name
-          }
-        </div>
+        <div className="text-xl font-bold">{focusedData?.[0]?.countryName}</div>
         <div className="flex flex-row items-center gap-2">
           <button
             className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 hover:bg-white/30"

@@ -13,4 +13,5 @@ export type DataType = {
   rank: number;
   year: number;
   pos: number;
+  countryName: string;
 };

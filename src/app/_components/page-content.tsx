@@ -121,6 +121,7 @@ const handler = (data: typeof power2024, y: string, scale: number) => {
       path: artist.path,
       pos: artist.pos * scale,
       category: artist.category,
+      countryName: artist.countryName,
     };
   });
 };
