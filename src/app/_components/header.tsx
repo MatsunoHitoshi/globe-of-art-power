@@ -55,11 +55,10 @@ export const Header = ({ selectedYear, setSelectedYear }: HeaderProps) => {
             <button
               className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 hover:bg-white/30"
               onClick={() => {
-                if (
-                  selectedYear.name === "2004" ||
-                  selectedYear.name === "ALL"
-                ) {
+                if (selectedYear.name === "2004") {
                   return;
+                } else if (selectedYear.name === "ALL") {
+                  setSelectedYear({ id: 1, name: "2024" });
                 } else {
                   const prevYear = Number(selectedYear.name) - 1;
                   const prevYearString = String(prevYear);
@@ -116,11 +115,10 @@ export const Header = ({ selectedYear, setSelectedYear }: HeaderProps) => {
             <button
               className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 hover:bg-white/30"
               onClick={() => {
-                if (
-                  selectedYear.name === "2024" ||
-                  selectedYear.name === "ALL"
-                ) {
+                if (selectedYear.name === "ALL") {
                   return;
+                } else if (selectedYear.name === "2024") {
+                  setSelectedYear({ id: 0, name: "ALL" });
                 } else {
                   const prevYear = Number(selectedYear.name) + 1;
                   const prevYearString = String(prevYear);

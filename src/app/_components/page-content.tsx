@@ -31,7 +31,8 @@ import {
 } from "../const/power";
 import { getCountryLocation } from "../const/country-code";
 import { Header } from "./header";
-import type { SelectOption } from "../types/types";
+import type { SelectOption, DataType } from "../types/types";
+import { Modal } from "./modal";
 
 const Globe = dynamic(
   () => import("react-globe.gl").then((mod) => mod.default),
@@ -40,18 +41,6 @@ const Globe = dynamic(
   },
 );
 
-type DataType = {
-  lat: number;
-  lng: number;
-  pos: number;
-};
-
-type ArtistLocation = {
-  country?: string;
-  lat?: number;
-  lng?: number;
-  pos: number;
-};
 const powerData = (y: string) => {
   return {
     "2024": power2024,
@@ -82,22 +71,28 @@ const handler = (data: typeof power2024, y: string, scale: number) => {
   const artistsWithLocation = data.results.flatMap((item) =>
     item.hits
       .map((hit) => {
-        if (!!hit.nationality) {
+        if (hit.nationality?.name) {
           const c_name = hit.nationality.name.split("-");
+          const country = c_name[c_name.length - 1] ?? "";
+          if (!country) return null;
+
           const artistPos = hit.acf.artist_power_100.find((i) => {
             return y === i.edition.name;
           })?.place;
 
           return {
             pos: 101 - (artistPos ?? 0),
-            ...getCountryLocation(c_name[c_name.length - 1] ?? ""),
+            country,
+            name: hit.title,
+            rank: artistPos ?? 0,
+            year: Number(y),
+            path: hit.path,
+            ...getCountryLocation(country),
           };
-        } else {
-          console.log(hit.title, " <- nationality not found");
-          return null;
         }
+        return null;
       })
-      .filter((x): x is ArtistLocation => x !== null),
+      .filter((x): x is DataType => x !== null),
   );
   console.log("year-", y, ":\n", artistsWithLocation);
 
@@ -114,13 +109,16 @@ const handler = (data: typeof power2024, y: string, scale: number) => {
   //   [],
   // );
 
-  // console.log(unifiedArtists);
-
-  return artistsWithLocation.map((country) => {
+  return artistsWithLocation.map((artist) => {
     return {
-      lat: country.lat ?? 0,
-      lng: country.lng ?? 0,
-      pos: country.pos * scale,
+      lat: artist.lat ?? 0,
+      lng: artist.lng ?? 0,
+      country: artist.country,
+      rank: artist.rank,
+      year: artist.year,
+      name: artist.name,
+      path: artist.path,
+      pos: artist.pos * scale,
     };
   });
 };
@@ -129,29 +127,16 @@ export const PageContent = () => {
   const globeEl = useRef<GlobeMethods>();
   const [innerWidth, innerHeight] = useWindowSize();
   const [sizeData, setSizeData] = useState<DataType[]>([]);
-  const [year, setYear] = useState<SelectOption>({ id: 1, name: "2024" });
-  // const places: any = placesData;
+  const [focusedData, setFocusedData] = useState<DataType[] | null>();
+  const [year, setYear] = useState<SelectOption>({ id: 0, name: "ALL" });
 
   useEffect(() => {
-    // fetch("/const/world_population.csv")
-    //   .then((res) => res.text())
-    //   .then((csv) =>
-    //     csvParse(csv, ({ lat, lng, pop }) => ({
-    //       lat: +(lat ?? 0),
-    //       lng: +(lng ?? 0),
-    //       pos: +(pop ?? 0),
-    //     })),
-    //   )
-    //   .then(setSizeData)
-    //   .catch((error) => console.error("CSVの読み込みに失敗しました:", error));
-
     const yearData = powerData(year.name);
 
     if (yearData) {
       const pointsData = handler(yearData as typeof power2024, year.name, 8000);
       setSizeData(pointsData);
     } else if (year.name === "ALL") {
-      // const array: DataType[] = [];
       let allPointsData: DataType[] = [];
       for (let i = 2004; i <= 2024; i++) {
         const yearData = powerData(i.toString());
@@ -184,6 +169,8 @@ export const PageContent = () => {
   return (
     <>
       <Header selectedYear={year} setSelectedYear={setYear} />
+      <Modal setFocusedData={setFocusedData} focusedData={focusedData} />
+
       <Globe
         ref={globeEl}
         width={innerWidth}
@@ -191,18 +178,29 @@ export const PageContent = () => {
         globeImageUrl="//unpkg.com/three-globe/example/img/earth-dark.jpg"
         bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
         backgroundImageUrl="//unpkg.com/three-globe/example/img/night-sky.png"
-        // backgroundColor="#000000"
         objectRotation={{ x: 50, y: 50, z: 1 }}
-        // from word-population example
         hexBinPointsData={sizeData}
         hexBinPointWeight="pos"
         hexAltitude={(d) => d.sumWeight * 6e-8}
         hexBinResolution={2}
         hexTopColor={(d) => weightColor(d.sumWeight)}
         hexSideColor={(d) => weightColor(d.sumWeight)}
-        hexBinMerge={true}
+        // hexBinMerge={true}
         hexTransitionDuration={1000}
-        enablePointerInteraction={false}
+        // enablePointerInteraction={false}
+        onHexClick={(e) => {
+          console.log(e);
+          setFocusedData(e.points as DataType[]);
+        }}
+        // onHexHover={(e) => {
+        //   console.log(e);
+        // }}
+        // onPointClick={(e) => {
+        //   console.log(e);
+        // }}
+        // onArcClick={(e) => {
+        //   console.log(e);
+        // }}
         showGraticules={true}
       />
     </>
