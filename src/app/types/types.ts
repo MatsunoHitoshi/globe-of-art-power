@@ -5,6 +5,7 @@ export type SelectOption = {
 
 export type DataType = {
   path: string;
+  category: string;
   lat: number;
   lng: number;
   country: string;

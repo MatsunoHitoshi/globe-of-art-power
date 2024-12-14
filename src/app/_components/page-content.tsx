@@ -87,6 +87,7 @@ const handler = (data: typeof power2024, y: string, scale: number) => {
             rank: artistPos ?? 0,
             year: Number(y),
             path: hit.path,
+            category: hit.artist_category?.name ?? "",
             ...getCountryLocation(country),
           };
         }
@@ -119,6 +120,7 @@ const handler = (data: typeof power2024, y: string, scale: number) => {
       name: artist.name,
       path: artist.path,
       pos: artist.pos * scale,
+      category: artist.category,
     };
   });
 };
