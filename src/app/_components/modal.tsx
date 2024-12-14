@@ -73,7 +73,7 @@ export const Modal = ({
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <div className="flex min-w-[50px] flex-col gap-2">
+                <div className="flex min-w-[54px] flex-col gap-2">
                   <div className="text-sm">in {artist.year}</div>
                   <div className="text-2xl font-bold">{artist.rank}.</div>
                 </div>
