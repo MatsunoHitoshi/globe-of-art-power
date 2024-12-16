@@ -88,6 +88,9 @@ const handler = (data: typeof power2024, y: string, scale: number) => {
             year: Number(y),
             path: hit.path,
             category: hit.artist_category?.name ?? "",
+            iconSrc:
+              hit.featured_media?.source_url ??
+              "https://placehold.jp/300x300.png",
             ...getCountryLocation(country),
           };
         }
@@ -122,6 +125,7 @@ const handler = (data: typeof power2024, y: string, scale: number) => {
       pos: artist.pos * scale,
       category: artist.category,
       countryName: artist.countryName,
+      iconSrc: artist.iconSrc,
     };
   });
 };
@@ -188,22 +192,13 @@ export const PageContent = () => {
         hexBinResolution={2}
         hexTopColor={(d) => weightColor(d.sumWeight)}
         hexSideColor={(d) => weightColor(d.sumWeight)}
-        // hexBinMerge={true}
         hexTransitionDuration={1000}
-        // enablePointerInteraction={false}
         onHexClick={(e) => {
-          console.log(e);
           setFocusedData(e.points as DataType[]);
         }}
-        // onHexHover={(e) => {
-        //   console.log(e);
-        // }}
-        // onPointClick={(e) => {
-        //   console.log(e);
-        // }}
-        // onArcClick={(e) => {
-        //   console.log(e);
-        // }}
+        // enablePointerInteraction={false}
+        // hexBinMerge={true}
+
         showGraticules={true}
       />
     </>

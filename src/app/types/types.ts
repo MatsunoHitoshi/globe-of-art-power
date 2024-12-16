@@ -14,4 +14,5 @@ export type DataType = {
   year: number;
   pos: number;
   countryName: string;
+  iconSrc: string;
 };

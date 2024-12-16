@@ -6,7 +6,6 @@ import {
   ArrowsPointingOutIcon,
   ArrowsPointingInIcon,
 } from "@heroicons/react/20/solid";
-import { countyCodes } from "../const/country-code";
 
 export const Modal = ({
   focusedData,
