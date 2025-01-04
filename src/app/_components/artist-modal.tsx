@@ -7,7 +7,7 @@ import {
   ArrowsPointingInIcon,
 } from "@heroicons/react/20/solid";
 
-export const Modal = ({
+export const ArtistModal = ({
   focusedData,
   setFocusedData,
 }: {

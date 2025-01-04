@@ -16,3 +16,9 @@ export type DataType = {
   countryName: string;
   iconSrc: string;
 };
+
+export type View = {
+  lat: number;
+  lng: number;
+  altitude: number;
+};

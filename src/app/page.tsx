@@ -1,9 +1,9 @@
-import { PageContent } from "./_components/page-content";
+import { TopPageContent } from "./_components/top-page-content";
 
 export default function Home() {
   return (
     <>
-      <PageContent />
+      <TopPageContent />
     </>
   );
 }
