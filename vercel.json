@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/clear-firebase-rdb",
+      "schedule": "0 18 * * *"
+    }
+  ]
+}
