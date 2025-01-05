@@ -34,15 +34,17 @@ export const InstructionModal = ({
         </div>
       </div>
       <div className="flex items-center justify-center">
-        <div className="h-40 w-40">
-          {isClient && (
-            <Image
-              src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qrUrl)}&size=300x300`}
-              alt="QRCode"
-              width={300}
-              height={300}
-            />
-          )}
+        <div className="rounded-lg bg-white p-2">
+          <div className="h-40 w-40">
+            {isClient && (
+              <Image
+                src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qrUrl)}&size=300x300&color=334155`}
+                alt="QRCode"
+                width={300}
+                height={300}
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>
