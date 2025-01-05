@@ -1,6 +1,7 @@
 import { XMarkIcon } from "@heroicons/react/20/solid";
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { CopyButton } from "./copy-button/copy-button";
 
 export const InstructionModal = ({
   qrUrl,
@@ -10,6 +11,7 @@ export const InstructionModal = ({
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
   const [isClient, setIsClient] = useState(false);
+  const qrImageSrc = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qrUrl)}&size=300x300&color=334155`;
 
   useEffect(() => {
     setIsClient(true);
@@ -33,19 +35,20 @@ export const InstructionModal = ({
           </button>
         </div>
       </div>
-      <div className="flex items-center justify-center">
+      <div className="flex flex-col items-center justify-center gap-4">
         <div className="rounded-lg bg-white p-2">
           <div className="h-40 w-40">
             {isClient && (
-              <Image
-                src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qrUrl)}&size=300x300&color=334155`}
-                alt="QRCode"
-                width={300}
-                height={300}
-              />
+              <Image src={qrImageSrc} alt="QRCode" width={300} height={300} />
             )}
           </div>
         </div>
+        {isClient && (
+          <div className="flex flex-row gap-2">
+            <div className="rounded-lg bg-slate-800 p-2">{qrUrl}</div>
+            <CopyButton content={qrUrl} />
+          </div>
+        )}
       </div>
     </div>
   );
