@@ -7,7 +7,12 @@ import { scaleSequentialSqrt, interpolateInferno } from "d3";
 
 import dynamic from "next/dynamic";
 
-import type { SelectOption, DataType } from "../types/types";
+import type {
+  SelectOption,
+  DataType,
+  View,
+  CurrentControl,
+} from "../types/types";
 import { handler, powerData } from "../_utils/globe-data-organizer";
 import type { power2024 } from "../const/power";
 import {
@@ -28,12 +33,6 @@ const Globe = dynamic(
     ssr: false,
   },
 );
-
-type View = {
-  lat: number;
-  lng: number;
-  altitude: number;
-};
 
 initializeFirebaseApp();
 
@@ -63,13 +62,13 @@ export const PeppersGhostPageContent = ({
       globeElTop.current.pointOfView(view, 10);
     }
     if (globeElLeft.current) {
-      globeElLeft.current.pointOfView(view, 10);
+      globeElLeft.current.pointOfView({ ...view, lng: view.lng - 90 }, 10);
     }
     if (globeElRight.current) {
-      globeElRight.current.pointOfView(view, 10);
+      globeElRight.current.pointOfView({ ...view, lng: view.lng + 90 }, 10);
     }
     if (globeElBottom.current) {
-      globeElBottom.current.pointOfView(view, 10);
+      globeElBottom.current.pointOfView({ ...view, lng: view.lng + 180 }, 10);
     }
   };
 
@@ -79,10 +78,11 @@ export const PeppersGhostPageContent = ({
       console.log(`current-controls/${controlId}`);
       const dbRef = ref(db, `current-controls/${controlId}`);
       return onValue(dbRef, (snapshot) => {
-        const value = snapshot.val() as View;
+        const value = snapshot.val() as CurrentControl;
         console.log("control: ", value);
-        setPointOfView(value);
-        globeRotationHandler(value);
+        setPointOfView(value.view);
+        setYear(value.year);
+        globeRotationHandler(value.view);
       });
     } catch (e) {
       if (e instanceof FirebaseError) {
@@ -163,7 +163,7 @@ export const PeppersGhostPageContent = ({
             ref={globeElTop}
             width={shortSideLength / 3}
             height={shortSideLength / 3}
-            globeImageUrl="//unpkg.com/three-globe/example/img/earth-dark.jpg"
+            globeImageUrl="//unpkg.com/three-globe/example/img/earth-water.png"
             bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
             backgroundColor="black"
             hexBinPointsData={sizeData}
@@ -186,7 +186,7 @@ export const PeppersGhostPageContent = ({
             ref={globeElLeft}
             width={shortSideLength / 3}
             height={shortSideLength / 3}
-            globeImageUrl="//unpkg.com/three-globe/example/img/earth-dark.jpg"
+            globeImageUrl="//unpkg.com/three-globe/example/img/earth-water.png"
             bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
             backgroundColor="black"
             hexBinPointsData={sizeData}
@@ -270,7 +270,7 @@ export const PeppersGhostPageContent = ({
             ref={globeElRight}
             width={shortSideLength / 3}
             height={shortSideLength / 3}
-            globeImageUrl="//unpkg.com/three-globe/example/img/earth-dark.jpg"
+            globeImageUrl="//unpkg.com/three-globe/example/img/earth-water.png"
             bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
             backgroundColor="black"
             hexBinPointsData={sizeData}
@@ -293,7 +293,7 @@ export const PeppersGhostPageContent = ({
             ref={globeElBottom}
             width={shortSideLength / 3}
             height={shortSideLength / 3}
-            globeImageUrl="//unpkg.com/three-globe/example/img/earth-dark.jpg"
+            globeImageUrl="//unpkg.com/three-globe/example/img/earth-water.png"
             bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
             backgroundColor="black"
             hexBinPointsData={sizeData}

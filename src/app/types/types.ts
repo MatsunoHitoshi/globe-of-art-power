@@ -22,3 +22,8 @@ export type View = {
   lng: number;
   altitude: number;
 };
+
+export type CurrentControl = {
+  view: View;
+  year: SelectOption;
+};

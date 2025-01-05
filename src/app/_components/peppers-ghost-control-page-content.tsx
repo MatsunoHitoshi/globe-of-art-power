@@ -7,7 +7,7 @@ import { scaleSequentialSqrt, interpolateInferno } from "d3";
 import dynamic from "next/dynamic";
 
 import { Header } from "./header";
-import type { SelectOption, DataType, View } from "../types/types";
+import type { SelectOption, DataType, CurrentControl } from "../types/types";
 import { ArtistModal } from "./artist-modal";
 import { handler, powerData } from "../_utils/globe-data-organizer";
 import type { power2024 } from "../const/power";
@@ -28,7 +28,7 @@ const Globe = dynamic(
 
 initializeFirebaseApp();
 
-const pushData = async (data: View, id: string) => {
+const pushData = async (data: CurrentControl, id: string) => {
   try {
     const db = getDatabase();
     const dbRef = ref(db, `current-controls/${id}`);
@@ -50,7 +50,7 @@ export const PeppersGhostControlPageContent = () => {
   const [instructionOpen, setInstructionOpen] = useState<boolean>(true);
 
   // For firebase realtime database
-  const [currentControl, setCurrentControl] = useState<View | null>();
+  const [currentControl, setCurrentControl] = useState<CurrentControl | null>();
   useEffect(() => {
     const updateControl = async () => {
       if (currentControl) {
@@ -63,6 +63,10 @@ export const PeppersGhostControlPageContent = () => {
 
   useEffect(() => {
     const yearData = powerData(year.name);
+
+    if (currentControl?.view) {
+      setCurrentControl({ ...currentControl, year: year });
+    }
 
     if (yearData) {
       const pointsData = handler(yearData as typeof power2024, year.name, 8000);
@@ -118,7 +122,14 @@ export const PeppersGhostControlPageContent = () => {
           setFocusedData(e.points as DataType[]);
         }}
         onZoom={(e) => {
-          setCurrentControl({ lng: e.lng, lat: e.lat, altitude: e.altitude });
+          setCurrentControl({
+            view: {
+              lng: e.lng,
+              lat: e.lat,
+              altitude: e.altitude,
+            },
+            year: year,
+          });
         }}
         showGraticules={true}
       />
