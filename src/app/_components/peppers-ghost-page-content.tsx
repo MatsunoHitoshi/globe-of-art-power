@@ -156,7 +156,7 @@ export const PeppersGhostPageContent = ({
   const weightColor = scaleSequentialSqrt(interpolateInferno).domain([0, 1e7]);
 
   return (
-    <div className="relative flex h-screen flex-col bg-black">
+    <div className="relative flex h-screen flex-col items-center justify-center bg-black">
       <div className="flex flex-row items-center justify-center">
         <div className="rotate-180 scale-x-[-1]">
           <Globe
