@@ -209,61 +209,17 @@ export const PeppersGhostPageContent = ({
           }}
           className="flex flex-col items-center justify-between border border-gray-900 p-4"
         >
-          {/* <button
-            className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 hover:bg-white/30"
-            onClick={() =>
-              setPointOfView({ ...pointOfView, lat: pointOfView.lat + 20 })
-            }
-          >
-            <ChevronUpIcon
-              className="pointer-events-none right-2.5 top-2.5 size-4 fill-white/60"
-              aria-hidden="true"
-            />
-          </button> */}
-          <div className="flex w-full flex-row items-center justify-between">
-            {/* <button
-              className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 hover:bg-white/30"
-              onClick={() =>
-                setPointOfView({ ...pointOfView, lng: pointOfView.lng - 20 })
-              }
-            >
-              <ChevronLeftIcon
-                className="pointer-events-none right-2.5 top-2.5 size-4 fill-white/60"
-                aria-hidden="true"
-              />
-            </button> */}
+          <div className="flex h-full w-full flex-row items-center justify-center">
             <button
-              className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 hover:bg-white/30"
+              className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/5 hover:bg-white/30"
               onClick={() => autoRotateStart()}
             >
               <PlayPauseIcon
-                className="pointer-events-none right-2.5 top-2.5 size-4 fill-white/60"
+                className="pointer-events-none right-2.5 top-2.5 size-6 fill-white/60"
                 aria-hidden="true"
               />
             </button>
-            {/* <button
-              className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 hover:bg-white/30"
-              onClick={() =>
-                setPointOfView({ ...pointOfView, lng: pointOfView.lng + 20 })
-              }
-            >
-              <ChevronRightIcon
-                className="pointer-events-none right-2.5 top-2.5 size-4 fill-white/60"
-                aria-hidden="true"
-              />
-            </button> */}
           </div>
-          {/* <button
-            className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 hover:bg-white/30"
-            onClick={() =>
-              setPointOfView({ ...pointOfView, lat: pointOfView.lat - 20 })
-            }
-          >
-            <ChevronDownIcon
-              className="pointer-events-none right-2.5 top-2.5 size-4 fill-white/60"
-              aria-hidden="true"
-            />
-          </button> */}
         </div>
         <div className="-rotate-90 scale-x-[-1]">
           <Globe
