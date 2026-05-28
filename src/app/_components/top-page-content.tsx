@@ -170,15 +170,15 @@ export const TopPageContent = () => {
       />
       <>
         <button
-          className="absolute right-3 top-24 z-10 flex h-9 items-center gap-1 rounded-lg bg-slate-900/55 px-3 text-xs text-white backdrop-blur-sm md:hidden"
+          className="fixed bottom-3 right-3 z-10 flex h-9 items-center gap-1 rounded-lg bg-slate-900/55 px-3 text-xs text-white backdrop-blur-sm md:hidden"
           onClick={() => setIsMobileSettingsOpen((prev) => !prev)}
         >
           <AdjustmentsHorizontalIcon className="size-4" />
           <span>Visualization Settings</span>
         </button>
         <div
-          className={`absolute left-1/2 z-10 w-[92%] max-w-sm -translate-x-1/2 rounded-lg bg-slate-900/45 px-3 py-2 text-white backdrop-blur-sm md:left-auto md:right-4 md:top-20 md:block md:w-72 md:translate-x-0 ${
-            isMobileSettingsOpen ? "top-36 block md:top-20" : "hidden"
+          className={`fixed bottom-14 left-1/2 z-10 w-[92%] max-w-sm -translate-x-1/2 rounded-lg bg-slate-900/45 px-3 py-2 text-white backdrop-blur-sm md:absolute md:bottom-auto md:left-auto md:right-4 md:top-20 md:block md:w-72 md:translate-x-0 ${
+            isMobileSettingsOpen ? "block" : "hidden"
           }`}
         >
           <div className="mb-2 flex items-center justify-between">
