@@ -1,5 +1,6 @@
 import { getCountryLocation } from "../const/country-code";
 import {
+  power2025,
   power2004,
   power2005,
   power2006,
@@ -24,33 +25,54 @@ import {
 } from "../const/power";
 import type { DataType } from "../types/types";
 
-export const powerData = (y: string) => {
-  return {
-    "2024": power2024,
-    "2023": power2023,
-    "2022": power2022,
-    "2021": power2021,
-    "2020": power2020,
-    "2019": power2019,
-    "2018": power2018,
-    "2017": power2017,
-    "2016": power2016,
-    "2015": power2015,
-    "2014": power2014,
-    "2013": power2013,
-    "2012": power2012,
-    "2011": power2011,
-    "2010": power2010,
-    "2009": power2009,
-    "2008": power2008,
-    "2007": power2007,
-    "2006": power2006,
-    "2005": power2005,
-    "2004": power2004,
-  }[y];
+export type PowerYearData = {
+  results: Array<{
+    hits: Array<{
+      title: string;
+      path: string;
+      nationality?: { name: string } | null;
+      artist_category?: { name: string } | null;
+      acf: {
+        artist_power_100: Array<{
+          place: number;
+          edition: { name: string };
+        }>;
+      };
+      featured_media?: { source_url?: string } | null;
+    }>;
+  }>;
 };
 
-export const handler = (data: typeof power2024, y: string, scale: number) => {
+export const powerData = (y: string): PowerYearData | undefined => {
+  const dataMap: Record<string, PowerYearData> = {
+    "2025": power2025 as PowerYearData,
+    "2024": power2024 as PowerYearData,
+    "2023": power2023 as PowerYearData,
+    "2022": power2022 as PowerYearData,
+    "2021": power2021 as PowerYearData,
+    "2020": power2020 as PowerYearData,
+    "2019": power2019 as PowerYearData,
+    "2018": power2018 as PowerYearData,
+    "2017": power2017 as PowerYearData,
+    "2016": power2016 as PowerYearData,
+    "2015": power2015 as PowerYearData,
+    "2014": power2014 as PowerYearData,
+    "2013": power2013 as PowerYearData,
+    "2012": power2012 as PowerYearData,
+    "2011": power2011 as PowerYearData,
+    "2010": power2010 as PowerYearData,
+    "2009": power2009 as PowerYearData,
+    "2008": power2008 as PowerYearData,
+    "2007": power2007 as PowerYearData,
+    "2006": power2006 as PowerYearData,
+    "2005": power2005 as PowerYearData,
+    "2004": power2004 as PowerYearData,
+  };
+
+  return dataMap[y];
+};
+
+export const handler = (data: PowerYearData, y: string, scale: number) => {
   const artistsWithLocation = data.results.flatMap((item) =>
     item.hits
       .map((hit) => {

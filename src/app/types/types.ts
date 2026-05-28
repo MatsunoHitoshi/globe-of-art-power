@@ -26,4 +26,7 @@ export type View = {
 export type CurrentControl = {
   view: View;
   year: SelectOption;
+  visualizationMode?: VisualizationMode;
 };
+
+export type VisualizationMode = "hex" | "heatmap";

@@ -12,37 +12,48 @@ import {
 } from "@heroicons/react/20/solid";
 import clsx from "clsx";
 import type { SelectOption } from "../types/types";
+import type { VisualizationMode } from "../types/types";
 
 const years = [
   { id: 0, name: "ALL" },
-  { id: 1, name: "2024" },
-  { id: 2, name: "2023" },
-  { id: 3, name: "2022" },
-  { id: 4, name: "2021" },
-  { id: 5, name: "2020" },
-  { id: 6, name: "2019" },
-  { id: 7, name: "2018" },
-  { id: 8, name: "2017" },
-  { id: 9, name: "2016" },
-  { id: 10, name: "2015" },
-  { id: 11, name: "2014" },
-  { id: 12, name: "2013" },
-  { id: 13, name: "2012" },
-  { id: 14, name: "2011" },
-  { id: 15, name: "2010" },
-  { id: 16, name: "2009" },
-  { id: 17, name: "2008" },
-  { id: 18, name: "2007" },
-  { id: 19, name: "2006" },
-  { id: 20, name: "2005" },
-  { id: 21, name: "2004" },
+  { id: 1, name: "2025" },
+  { id: 2, name: "2024" },
+  { id: 3, name: "2023" },
+  { id: 4, name: "2022" },
+  { id: 5, name: "2021" },
+  { id: 6, name: "2020" },
+  { id: 7, name: "2019" },
+  { id: 8, name: "2018" },
+  { id: 9, name: "2017" },
+  { id: 10, name: "2016" },
+  { id: 11, name: "2015" },
+  { id: 12, name: "2014" },
+  { id: 13, name: "2013" },
+  { id: 14, name: "2012" },
+  { id: 15, name: "2011" },
+  { id: 16, name: "2010" },
+  { id: 17, name: "2009" },
+  { id: 18, name: "2008" },
+  { id: 19, name: "2007" },
+  { id: 20, name: "2006" },
+  { id: 21, name: "2005" },
+  { id: 22, name: "2004" },
 ];
 
 type HeaderProps = {
   selectedYear: SelectOption;
   setSelectedYear: React.Dispatch<React.SetStateAction<SelectOption>>;
+  visualizationMode?: VisualizationMode;
+  setVisualizationMode?: React.Dispatch<
+    React.SetStateAction<VisualizationMode>
+  >;
 };
-export const Header = ({ selectedYear, setSelectedYear }: HeaderProps) => {
+export const Header = ({
+  selectedYear,
+  setSelectedYear,
+  visualizationMode,
+  setVisualizationMode,
+}: HeaderProps) => {
   return (
     <>
       <div className="absolute z-10 w-full bg-slate-700/30 p-4 text-white backdrop-blur-sm">
@@ -51,21 +62,47 @@ export const Header = ({ selectedYear, setSelectedYear }: HeaderProps) => {
             <a href="">The Globe of Art Power</a>
           </div>
 
-          <div className="flex flex-row items-center gap-1">
+          <div className="flex flex-row items-center gap-2">
+            {setVisualizationMode && visualizationMode && (
+              <div className="inline-flex rounded-lg bg-white/5 p-1">
+                <button
+                  className={clsx(
+                    "rounded-md px-2 py-1 text-xs md:text-sm",
+                    visualizationMode === "hex"
+                      ? "bg-white/25 text-white"
+                      : "text-white/80 hover:bg-white/10",
+                  )}
+                  onClick={() => setVisualizationMode("hex")}
+                >
+                  Bar
+                </button>
+                <button
+                  className={clsx(
+                    "rounded-md px-2 py-1 text-xs md:text-sm",
+                    visualizationMode === "heatmap"
+                      ? "bg-white/25 text-white"
+                      : "text-white/80 hover:bg-white/10",
+                  )}
+                  onClick={() => setVisualizationMode("heatmap")}
+                >
+                  Heatmap
+                </button>
+              </div>
+            )}
             <button
               className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 hover:bg-white/30"
               onClick={() => {
                 if (selectedYear.name === "2004") {
                   return;
                 } else if (selectedYear.name === "ALL") {
-                  setSelectedYear({ id: 1, name: "2024" });
+                  setSelectedYear({ id: 1, name: "2025" });
                 } else {
                   const prevYear = Number(selectedYear.name) - 1;
                   const prevYearString = String(prevYear);
                   setSelectedYear(
                     years.find((y) => {
                       return y.name === prevYearString;
-                    }) ?? { id: 21, name: "2004" },
+                    }) ?? { id: 22, name: "2004" },
                   );
                 }
               }}
@@ -117,7 +154,7 @@ export const Header = ({ selectedYear, setSelectedYear }: HeaderProps) => {
               onClick={() => {
                 if (selectedYear.name === "ALL") {
                   return;
-                } else if (selectedYear.name === "2024") {
+                } else if (selectedYear.name === "2025") {
                   setSelectedYear({ id: 0, name: "ALL" });
                 } else {
                   const prevYear = Number(selectedYear.name) + 1;
@@ -125,7 +162,7 @@ export const Header = ({ selectedYear, setSelectedYear }: HeaderProps) => {
                   setSelectedYear(
                     years.find((y) => {
                       return y.name === prevYearString;
-                    }) ?? { id: 1, name: "2024" },
+                    }) ?? { id: 1, name: "2025" },
                   );
                 }
               }}

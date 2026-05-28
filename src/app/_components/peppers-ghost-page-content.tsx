@@ -12,8 +12,10 @@ import type {
   DataType,
   View,
   CurrentControl,
+  VisualizationMode,
 } from "../types/types";
 import { handler, powerData } from "../_utils/globe-data-organizer";
+import { heatmapPointWeight } from "../_utils/heatmap-point-weight";
 import type { power2024 } from "../const/power";
 import {
   // ChevronDownIcon,
@@ -34,6 +36,10 @@ const Globe = dynamic(
   },
 );
 
+const HEATMAP_BANDWIDTH = 2.2;
+const HEATMAP_TOP_ALTITUDE = 0.2;
+const HEATMAP_COLOR_SATURATION = 1.15;
+
 initializeFirebaseApp();
 
 export const PeppersGhostPageContent = ({
@@ -50,6 +56,8 @@ export const PeppersGhostPageContent = ({
   const [sizeData, setSizeData] = useState<DataType[]>([]);
   const [focusedData, setFocusedData] = useState<DataType[] | null>();
   const [year, setYear] = useState<SelectOption>({ id: 0, name: "ALL" });
+  const [visualizationMode, setVisualizationMode] =
+    useState<VisualizationMode>("hex");
   const [autoRotate, setAutoRotate] = useState<boolean>(false);
   const [pointOfView, setPointOfView] = useState<View>({
     lat: 0,
@@ -82,6 +90,7 @@ export const PeppersGhostPageContent = ({
         console.log("control: ", value);
         setPointOfView(value.view);
         setYear(value.year);
+        setVisualizationMode(value.visualizationMode ?? "hex");
         globeRotationHandler(value.view);
       });
     } catch (e) {
@@ -166,13 +175,31 @@ export const PeppersGhostPageContent = ({
             globeImageUrl="//unpkg.com/three-globe/example/img/earth-water.png"
             bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
             backgroundColor="black"
-            hexBinPointsData={sizeData}
+            hexBinPointsData={visualizationMode === "hex" ? sizeData : []}
             hexBinPointWeight="pos"
-            hexAltitude={(d) => d.sumWeight * 6e-8}
+            hexAltitude={(d) =>
+              visualizationMode === "hex" ? d.sumWeight * 6e-8 : 0
+            }
             hexBinResolution={2}
-            hexTopColor={(d) => weightColor(d.sumWeight)}
-            hexSideColor={(d) => weightColor(d.sumWeight)}
+            hexTopColor={(d) =>
+              visualizationMode === "hex"
+                ? weightColor(d.sumWeight)
+                : "rgba(255,255,255,0)"
+            }
+            hexSideColor={(d) =>
+              visualizationMode === "hex"
+                ? weightColor(d.sumWeight)
+                : "rgba(255,255,255,0)"
+            }
             hexTransitionDuration={1000}
+            heatmapsData={visualizationMode === "heatmap" ? [sizeData] : []}
+            heatmapPointLat="lat"
+            heatmapPointLng="lng"
+            heatmapPointWeight={heatmapPointWeight}
+            heatmapBandwidth={HEATMAP_BANDWIDTH}
+            heatmapTopAltitude={HEATMAP_TOP_ALTITUDE}
+            heatmapColorSaturation={HEATMAP_COLOR_SATURATION}
+            heatmapsTransitionDuration={1000}
             onHexClick={(e) => {
               setFocusedData(e.points as DataType[]);
             }}
@@ -189,13 +216,31 @@ export const PeppersGhostPageContent = ({
             globeImageUrl="//unpkg.com/three-globe/example/img/earth-water.png"
             bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
             backgroundColor="black"
-            hexBinPointsData={sizeData}
+            hexBinPointsData={visualizationMode === "hex" ? sizeData : []}
             hexBinPointWeight="pos"
-            hexAltitude={(d) => d.sumWeight * 6e-8}
+            hexAltitude={(d) =>
+              visualizationMode === "hex" ? d.sumWeight * 6e-8 : 0
+            }
             hexBinResolution={2}
-            hexTopColor={(d) => weightColor(d.sumWeight)}
-            hexSideColor={(d) => weightColor(d.sumWeight)}
+            hexTopColor={(d) =>
+              visualizationMode === "hex"
+                ? weightColor(d.sumWeight)
+                : "rgba(255,255,255,0)"
+            }
+            hexSideColor={(d) =>
+              visualizationMode === "hex"
+                ? weightColor(d.sumWeight)
+                : "rgba(255,255,255,0)"
+            }
             hexTransitionDuration={1000}
+            heatmapsData={visualizationMode === "heatmap" ? [sizeData] : []}
+            heatmapPointLat="lat"
+            heatmapPointLng="lng"
+            heatmapPointWeight={heatmapPointWeight}
+            heatmapBandwidth={HEATMAP_BANDWIDTH}
+            heatmapTopAltitude={HEATMAP_TOP_ALTITUDE}
+            heatmapColorSaturation={HEATMAP_COLOR_SATURATION}
+            heatmapsTransitionDuration={1000}
             onHexClick={(e) => {
               setFocusedData(e.points as DataType[]);
             }}
@@ -229,13 +274,31 @@ export const PeppersGhostPageContent = ({
             globeImageUrl="//unpkg.com/three-globe/example/img/earth-water.png"
             bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
             backgroundColor="black"
-            hexBinPointsData={sizeData}
+            hexBinPointsData={visualizationMode === "hex" ? sizeData : []}
             hexBinPointWeight="pos"
-            hexAltitude={(d) => d.sumWeight * 6e-8}
+            hexAltitude={(d) =>
+              visualizationMode === "hex" ? d.sumWeight * 6e-8 : 0
+            }
             hexBinResolution={2}
-            hexTopColor={(d) => weightColor(d.sumWeight)}
-            hexSideColor={(d) => weightColor(d.sumWeight)}
+            hexTopColor={(d) =>
+              visualizationMode === "hex"
+                ? weightColor(d.sumWeight)
+                : "rgba(255,255,255,0)"
+            }
+            hexSideColor={(d) =>
+              visualizationMode === "hex"
+                ? weightColor(d.sumWeight)
+                : "rgba(255,255,255,0)"
+            }
             hexTransitionDuration={1000}
+            heatmapsData={visualizationMode === "heatmap" ? [sizeData] : []}
+            heatmapPointLat="lat"
+            heatmapPointLng="lng"
+            heatmapPointWeight={heatmapPointWeight}
+            heatmapBandwidth={HEATMAP_BANDWIDTH}
+            heatmapTopAltitude={HEATMAP_TOP_ALTITUDE}
+            heatmapColorSaturation={HEATMAP_COLOR_SATURATION}
+            heatmapsTransitionDuration={1000}
             onHexClick={(e) => {
               setFocusedData(e.points as DataType[]);
             }}
@@ -252,13 +315,31 @@ export const PeppersGhostPageContent = ({
             globeImageUrl="//unpkg.com/three-globe/example/img/earth-water.png"
             bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
             backgroundColor="black"
-            hexBinPointsData={sizeData}
+            hexBinPointsData={visualizationMode === "hex" ? sizeData : []}
             hexBinPointWeight="pos"
-            hexAltitude={(d) => d.sumWeight * 6e-8}
+            hexAltitude={(d) =>
+              visualizationMode === "hex" ? d.sumWeight * 6e-8 : 0
+            }
             hexBinResolution={2}
-            hexTopColor={(d) => weightColor(d.sumWeight)}
-            hexSideColor={(d) => weightColor(d.sumWeight)}
+            hexTopColor={(d) =>
+              visualizationMode === "hex"
+                ? weightColor(d.sumWeight)
+                : "rgba(255,255,255,0)"
+            }
+            hexSideColor={(d) =>
+              visualizationMode === "hex"
+                ? weightColor(d.sumWeight)
+                : "rgba(255,255,255,0)"
+            }
             hexTransitionDuration={1000}
+            heatmapsData={visualizationMode === "heatmap" ? [sizeData] : []}
+            heatmapPointLat="lat"
+            heatmapPointLng="lng"
+            heatmapPointWeight={heatmapPointWeight}
+            heatmapBandwidth={HEATMAP_BANDWIDTH}
+            heatmapTopAltitude={HEATMAP_TOP_ALTITUDE}
+            heatmapColorSaturation={HEATMAP_COLOR_SATURATION}
+            heatmapsTransitionDuration={1000}
             onHexClick={(e) => {
               setFocusedData(e.points as DataType[]);
             }}

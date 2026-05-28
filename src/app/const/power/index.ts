@@ -1,3 +1,4 @@
+export * from "./power2025";
 export * from "./power2024";
 export * from "./power2023";
 export * from "./power2022";

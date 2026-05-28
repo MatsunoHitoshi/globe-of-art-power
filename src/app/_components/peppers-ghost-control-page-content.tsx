@@ -7,9 +7,15 @@ import { scaleSequentialSqrt, interpolateInferno } from "d3";
 import dynamic from "next/dynamic";
 
 import { Header } from "./header";
-import type { SelectOption, DataType, CurrentControl } from "../types/types";
+import type {
+  SelectOption,
+  DataType,
+  CurrentControl,
+  VisualizationMode,
+} from "../types/types";
 import { ArtistModal } from "./artist-modal";
 import { handler, powerData } from "../_utils/globe-data-organizer";
+import { heatmapPointWeight } from "../_utils/heatmap-point-weight";
 import type { power2024 } from "../const/power";
 import { initializeFirebaseApp } from "../_utils/firebase";
 import { createId } from "../_utils/cuid/cuid";
@@ -25,6 +31,10 @@ const Globe = dynamic(
     ssr: false,
   },
 );
+
+const HEATMAP_BANDWIDTH = 2.2;
+const HEATMAP_TOP_ALTITUDE = 0.2;
+const HEATMAP_COLOR_SATURATION = 1.15;
 
 initializeFirebaseApp();
 
@@ -46,6 +56,8 @@ export const PeppersGhostControlPageContent = () => {
   const [sizeData, setSizeData] = useState<DataType[]>([]);
   const [focusedData, setFocusedData] = useState<DataType[] | null>();
   const [year, setYear] = useState<SelectOption>({ id: 0, name: "ALL" });
+  const [visualizationMode, setVisualizationMode] =
+    useState<VisualizationMode>("hex");
   const [id, setId] = useState<string>(createId());
   const [instructionOpen, setInstructionOpen] = useState<boolean>(true);
 
@@ -64,9 +76,14 @@ export const PeppersGhostControlPageContent = () => {
   useEffect(() => {
     const yearData = powerData(year.name);
 
-    if (currentControl?.view) {
-      setCurrentControl({ ...currentControl, year: year });
-    }
+    setCurrentControl((prev) => {
+      if (!prev?.view) return prev;
+      return {
+        ...prev,
+        year: year,
+        visualizationMode: visualizationMode,
+      };
+    });
 
     if (yearData) {
       const pointsData = handler(yearData as typeof power2024, year.name, 8000);
@@ -89,13 +106,18 @@ export const PeppersGhostControlPageContent = () => {
     } else {
       console.log("Data is not found");
     }
-  }, [year]);
+  }, [year, visualizationMode]);
 
   const weightColor = scaleSequentialSqrt(interpolateInferno).domain([0, 1e7]);
 
   return (
     <>
-      <Header selectedYear={year} setSelectedYear={setYear} />
+      <Header
+        selectedYear={year}
+        setSelectedYear={setYear}
+        visualizationMode={visualizationMode}
+        setVisualizationMode={setVisualizationMode}
+      />
       <ArtistModal setFocusedData={setFocusedData} focusedData={focusedData} />
       {instructionOpen && (
         <InstructionModal
@@ -111,13 +133,31 @@ export const PeppersGhostControlPageContent = () => {
         globeImageUrl="//unpkg.com/three-globe/example/img/earth-dark.jpg"
         bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
         backgroundImageUrl="//unpkg.com/three-globe/example/img/night-sky.png"
-        hexBinPointsData={sizeData}
+        hexBinPointsData={visualizationMode === "hex" ? sizeData : []}
         hexBinPointWeight="pos"
-        hexAltitude={(d) => d.sumWeight * 6e-8}
+        hexAltitude={(d) =>
+          visualizationMode === "hex" ? d.sumWeight * 6e-8 : 0
+        }
         hexBinResolution={2}
-        hexTopColor={(d) => weightColor(d.sumWeight)}
-        hexSideColor={(d) => weightColor(d.sumWeight)}
+        hexTopColor={(d) =>
+          visualizationMode === "hex"
+            ? weightColor(d.sumWeight)
+            : "rgba(255,255,255,0)"
+        }
+        hexSideColor={(d) =>
+          visualizationMode === "hex"
+            ? weightColor(d.sumWeight)
+            : "rgba(255,255,255,0)"
+        }
         hexTransitionDuration={1000}
+        heatmapsData={visualizationMode === "heatmap" ? [sizeData] : []}
+        heatmapPointLat="lat"
+        heatmapPointLng="lng"
+        heatmapPointWeight={heatmapPointWeight}
+        heatmapBandwidth={HEATMAP_BANDWIDTH}
+        heatmapTopAltitude={HEATMAP_TOP_ALTITUDE}
+        heatmapColorSaturation={HEATMAP_COLOR_SATURATION}
+        heatmapsTransitionDuration={1000}
         onHexClick={(e) => {
           setFocusedData(e.points as DataType[]);
         }}
@@ -129,6 +169,7 @@ export const PeppersGhostControlPageContent = () => {
               altitude: e.altitude,
             },
             year: year,
+            visualizationMode: visualizationMode,
           });
         }}
         showGraticules={true}
