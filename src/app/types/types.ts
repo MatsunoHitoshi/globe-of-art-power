@@ -13,6 +13,8 @@ export type DataType = {
   rank: number;
   year: number;
   pos: number;
+  posAreaAdjusted: number;
+  areaKm2: number;
   countryName: string;
   iconSrc: string;
 };
@@ -30,3 +32,5 @@ export type CurrentControl = {
 };
 
 export type VisualizationMode = "hex" | "heatmap";
+
+export type EvaluationMode = "total" | "areaAdjusted";

@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { DataType } from "../types/types";
 
+type HeatmapMetric = "pos" | "posAreaAdjusted";
+
 type HeatmapPoint = {
   key: string;
   lat: number;
@@ -10,20 +12,24 @@ type HeatmapPoint = {
   pos: number;
 };
 
-const aggregateHeatmapPoints = (data: DataType[]): HeatmapPoint[] => {
+const aggregateHeatmapPoints = (
+  data: DataType[],
+  metric: HeatmapMetric,
+): HeatmapPoint[] => {
   const map = new Map<string, HeatmapPoint>();
 
   for (const item of data) {
     const key = `${item.country}-${item.lat}-${item.lng}`;
     const existing = map.get(key);
+    const metricValue = item[metric];
     if (existing) {
-      existing.pos += item.pos;
+      existing.pos += metricValue;
     } else {
       map.set(key, {
         key,
         lat: item.lat,
         lng: item.lng,
-        pos: item.pos,
+        pos: metricValue,
       });
     }
   }
@@ -61,6 +67,7 @@ const interpolateHeatmapPoints = (
 
 export const useAnimatedHeatmapData = (
   sourceData: DataType[],
+  metric: HeatmapMetric,
   durationMs = 700,
 ) => {
   const [animatedData, setAnimatedData] = useState<HeatmapPoint[]>([]);
@@ -68,7 +75,7 @@ export const useAnimatedHeatmapData = (
   const frameIdRef = useRef<number | null>(null);
 
   useEffect(() => {
-    const nextData = aggregateHeatmapPoints(sourceData);
+    const nextData = aggregateHeatmapPoints(sourceData, metric);
     const prevData = previousDataRef.current;
 
     if (frameIdRef.current !== null) {
@@ -105,7 +112,7 @@ export const useAnimatedHeatmapData = (
         frameIdRef.current = null;
       }
     };
-  }, [sourceData, durationMs]);
+  }, [sourceData, durationMs, metric]);
 
   return animatedData;
 };

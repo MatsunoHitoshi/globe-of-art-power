@@ -74,6 +74,72 @@ export const countyCodes = [
   { code: "IR", lat: 32.4279, lng: 53.688, countryName: "Iran" },
 ];
 
+const COUNTRY_AREA_KM2: Record<string, number> = {
+  US: 9833520,
+  DE: 357022,
+  GB: 243610,
+  BR: 8515767,
+  CH: 41285,
+  IN: 3287263,
+  PS: 6020,
+  SA: 2149690,
+  CG: 342000,
+  CN: 9596961,
+  FR: 551695,
+  GH: 238533,
+  HK: 1110,
+  IT: 301340,
+  JP: 377975,
+  KR: 100210,
+  SG: 734,
+  AU: 7692024,
+  BD: 148460,
+  CL: 756102,
+  CM: 475442,
+  CR: 51100,
+  EG: 1002450,
+  ES: 505990,
+  HR: 56594,
+  ID: 1904569,
+  LK: 65610,
+  CA: 9984670,
+  LB: 10452,
+  MX: 1964375,
+  NG: 923768,
+  PE: 1285216,
+  QA: 11586,
+  TH: 513120,
+  UA: 603500,
+  UAE: 83600,
+  KE: 580367,
+  BE: 30528,
+  GT: 108889,
+  AT: 83879,
+  GN: 245857,
+  MA: 446550,
+  CU: 109884,
+  PH: 300000,
+  DK: 42933,
+  DZ: 2381741,
+  RO: 238397,
+  TR: 783562,
+  HU: 93028,
+  RU: 17098242,
+  LU: 2586,
+  SE: 450295,
+  GR: 131957,
+  VE: 916445,
+  ZA: 1221037,
+  PL: 312679,
+  IS: 103000,
+  IL: 22072,
+  UY: 176215,
+  NL: 41850,
+  BG: 110879,
+  PT: 92212,
+  IR: 1648195,
+};
+
 export const getCountryLocation = (code: string) => {
   const res = countyCodes.find((data) => {
     return data.code === code;
@@ -81,4 +147,8 @@ export const getCountryLocation = (code: string) => {
   if (!res) console.log(code, " <- not found");
   // return { lat: res?.lat, lng: res?.lng, code: res?.code };
   return res;
+};
+
+export const getCountryAreaKm2 = (code: string) => {
+  return COUNTRY_AREA_KM2[code] ?? 1_000_000;
 };

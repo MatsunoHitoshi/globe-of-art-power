@@ -1,4 +1,4 @@
-import { getCountryLocation } from "../const/country-code";
+import { getCountryAreaKm2, getCountryLocation } from "../const/country-code";
 import {
   power2025,
   power2004,
@@ -107,6 +107,10 @@ export const handler = (data: PowerYearData, y: string, scale: number) => {
   console.log("year-", y, ":\n", artistsWithLocation);
 
   return artistsWithLocation.map((artist) => {
+    const areaKm2 = getCountryAreaKm2(artist.country);
+    // 面積100万km²を基準に補正係数を正規化する。
+    const areaAdjustedFactor = 1000 / Math.sqrt(areaKm2);
+    const weightedPos = artist.pos * scale;
     return {
       lat: artist.lat ?? 0,
       lng: artist.lng ?? 0,
@@ -115,7 +119,9 @@ export const handler = (data: PowerYearData, y: string, scale: number) => {
       year: artist.year,
       name: artist.name,
       path: artist.path,
-      pos: artist.pos * scale,
+      pos: weightedPos,
+      posAreaAdjusted: weightedPos * areaAdjustedFactor,
+      areaKm2,
       category: artist.category,
       countryName: artist.countryName,
       iconSrc: artist.iconSrc,

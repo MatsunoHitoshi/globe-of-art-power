@@ -56,13 +56,13 @@ export const Header = ({
 }: HeaderProps) => {
   return (
     <>
-      <div className="absolute z-10 w-full bg-slate-700/30 p-4 text-white backdrop-blur-sm">
-        <div className="flex flex-row items-center justify-between">
-          <div className="text-sm font-bold md:text-lg">
+      <div className="absolute z-10 w-full bg-slate-700/30 px-3 py-3 text-white backdrop-blur-sm md:p-4">
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div className="text-xl font-bold leading-tight md:text-lg">
             <a href="">The Globe of Art Power</a>
           </div>
 
-          <div className="flex flex-row items-center gap-2">
+          <div className="flex w-full flex-wrap items-center justify-start gap-1.5 md:w-auto md:flex-nowrap md:justify-end md:gap-2">
             {setVisualizationMode && visualizationMode && (
               <div className="inline-flex rounded-lg bg-white/5 p-1">
                 <button
@@ -90,7 +90,7 @@ export const Header = ({
               </div>
             )}
             <button
-              className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 hover:bg-white/30"
+              className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/5 hover:bg-white/30 md:h-8 md:w-8"
               onClick={() => {
                 if (selectedYear.name === "2004") {
                   return;
@@ -113,7 +113,7 @@ export const Header = ({
               />
             </button>
 
-            <div className="w-24">
+            <div className="w-24 min-w-24">
               <Listbox value={selectedYear} onChange={setSelectedYear}>
                 <ListboxButton
                   className={clsx(
@@ -150,7 +150,7 @@ export const Header = ({
             </div>
 
             <button
-              className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 hover:bg-white/30"
+              className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/5 hover:bg-white/30 md:h-8 md:w-8"
               onClick={() => {
                 if (selectedYear.name === "ALL") {
                   return;

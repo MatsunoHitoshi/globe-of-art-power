@@ -62,6 +62,7 @@ export const PeppersGhostControlPageContent = () => {
     useState<VisualizationMode>("hex");
   const animatedHeatmapData = useAnimatedHeatmapData(
     sizeData,
+    "pos",
     HEATMAP_YEAR_TRANSITION_MS,
   );
   const [id, setId] = useState<string>(createId());
