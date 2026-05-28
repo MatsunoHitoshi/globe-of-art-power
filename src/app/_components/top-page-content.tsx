@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { GlobeMethods } from "react-globe.gl";
 import { useWindowSize } from "@/app/_hooks/use-window-size";
+import { useAnimatedHeatmapData } from "@/app/_hooks/use-animated-heatmap-data";
 import { scaleSequentialSqrt, interpolateInferno } from "d3";
 
 import dynamic from "next/dynamic";
@@ -23,6 +24,7 @@ const Globe = dynamic(
 const HEATMAP_BANDWIDTH = 4.3;
 const HEATMAP_TOP_ALTITUDE = 0.3;
 const HEATMAP_COLOR_SATURATION = 1.15;
+const HEATMAP_YEAR_TRANSITION_MS = 650;
 
 export const TopPageContent = () => {
   const globeEl = useRef<GlobeMethods>();
@@ -32,6 +34,10 @@ export const TopPageContent = () => {
   const [year, setYear] = useState<SelectOption>({ id: 0, name: "ALL" });
   const [visualizationMode, setVisualizationMode] =
     useState<VisualizationMode>("hex");
+  const animatedHeatmapData = useAnimatedHeatmapData(
+    sizeData,
+    HEATMAP_YEAR_TRANSITION_MS,
+  );
 
   useEffect(() => {
     const yearData = powerData(year.name);
@@ -104,14 +110,14 @@ export const TopPageContent = () => {
             : "rgba(255,255,255,0)"
         }
         hexTransitionDuration={1000}
-        heatmapsData={visualizationMode === "heatmap" ? [sizeData] : []}
+        heatmapsData={visualizationMode === "heatmap" ? [animatedHeatmapData] : []}
         heatmapPointLat="lat"
         heatmapPointLng="lng"
         heatmapPointWeight={heatmapPointWeight}
         heatmapBandwidth={HEATMAP_BANDWIDTH}
         heatmapTopAltitude={HEATMAP_TOP_ALTITUDE}
         heatmapColorSaturation={HEATMAP_COLOR_SATURATION}
-        heatmapsTransitionDuration={1000}
+        heatmapsTransitionDuration={0}
         onHexClick={(e) => {
           setFocusedData(e.points as DataType[]);
         }}
