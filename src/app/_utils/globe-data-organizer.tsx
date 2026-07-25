@@ -76,32 +76,38 @@ export const handler = (data: PowerYearData, y: string, scale: number) => {
   const artistsWithLocation = data.results.flatMap((item) =>
     item.hits
       .map((hit) => {
-        if (hit.nationality?.name) {
-          const c_name = hit.nationality.name.split("-");
-          const country = c_name[c_name.length - 1] ?? "";
-          if (!country) return null;
+        if (!hit.nationality?.name) return null;
 
-          const artistPos = hit.acf.artist_power_100.find((i) => {
-            return y === i.edition.name;
-          })?.place;
+        const c_name = hit.nationality.name.split("-");
+        const rawCountry = c_name[c_name.length - 1] ?? "";
+        if (!rawCountry) return null;
 
-          return {
-            pos: 101 - (artistPos ?? 0),
-            country,
-            name: hit.title,
-            rank: artistPos ?? 0,
-            year: Number(y),
-            path: hit.path,
-            category: hit.artist_category?.name ?? "",
-            iconSrc:
-              hit.featured_media?.source_url ??
-              "https://placehold.jp/300x300.png",
-            ...getCountryLocation(country),
-          };
-        }
-        return null;
+        // 未登録・国際コード (INT 等) は座標が取れないためプロットしない
+        // （undefined を lat/lng ?? 0 に落とすと Null Island = アフリカ沖 0,0 に積もる）
+        const location = getCountryLocation(rawCountry);
+        if (!location) return null;
+
+        const artistPos = hit.acf.artist_power_100.find((i) => {
+          return y === i.edition.name;
+        })?.place;
+
+        return {
+          pos: 101 - (artistPos ?? 0),
+          country: location.code,
+          lat: location.lat,
+          lng: location.lng,
+          countryName: location.countryName,
+          name: hit.title,
+          rank: artistPos ?? 0,
+          year: Number(y),
+          path: hit.path,
+          category: hit.artist_category?.name ?? "",
+          iconSrc:
+            hit.featured_media?.source_url ??
+            "https://placehold.jp/300x300.png",
+        };
       })
-      .filter((x): x is DataType => x !== null),
+      .filter((x): x is Omit<DataType, "posAreaAdjusted" | "areaKm2"> => x !== null),
   );
 
   console.log("year-", y, ":\n", artistsWithLocation);
@@ -112,8 +118,8 @@ export const handler = (data: PowerYearData, y: string, scale: number) => {
     const areaAdjustedFactor = 1000 / Math.sqrt(areaKm2);
     const weightedPos = artist.pos * scale;
     return {
-      lat: artist.lat ?? 0,
-      lng: artist.lng ?? 0,
+      lat: artist.lat,
+      lng: artist.lng,
       country: artist.country,
       rank: artist.rank,
       year: artist.year,
