@@ -316,7 +316,7 @@ export const LabPageContent = () => {
               </Section>
             )}
 
-            {(selectedPerson || selectedEdge) && (
+            {(selectedPerson ?? selectedEdge) && (
               <Section title="Selection">
                 {selectedEdge && (
                   <p className="mb-2 text-white/80">
@@ -341,17 +341,21 @@ export const LabPageContent = () => {
                     )}
                     <p className="text-white/55">
                       Places:{" "}
-                      {selectedPerson.places.map((p) => p.label).join(", ") ||
-                        "—"}
+                      {selectedPerson.places.length > 0
+                        ? selectedPerson.places.map((p) => p.label).join(", ")
+                        : "—"}
                     </p>
                     <p className="text-white/55">
                       Topics:{" "}
-                      {selectedPerson.topics
-                        .map(
-                          (id) =>
-                            TOPIC_DEFS.find((t) => t.id === id)?.label ?? id,
-                        )
-                        .join(", ") || "—"}
+                      {selectedPerson.topics.length > 0
+                        ? selectedPerson.topics
+                            .map(
+                              (id) =>
+                                TOPIC_DEFS.find((t) => t.id === id)?.label ??
+                                id,
+                            )
+                            .join(", ")
+                        : "—"}
                     </p>
                     <p className="line-clamp-6 leading-relaxed text-white/65">
                       {selectedPerson.content.slice(0, 420)}
