@@ -24,6 +24,10 @@ import {
   power2024,
 } from "../const/power";
 import type { DataType } from "../types/types";
+import {
+  getPowerIndexForPath,
+  POWER_INDEX_TO_POS_FACTOR,
+} from "./power-index";
 
 export type PowerYearData = {
   results: Array<{
@@ -107,7 +111,14 @@ export const handler = (data: PowerYearData, y: string, scale: number) => {
             "https://placehold.jp/300x300.png",
         };
       })
-      .filter((x): x is Omit<DataType, "posAreaAdjusted" | "areaKm2"> => x !== null),
+      .filter(
+        (
+          x,
+        ): x is Omit<
+          DataType,
+          "posAreaAdjusted" | "posPowerIndex" | "powerIndex" | "areaKm2"
+        > => x !== null,
+      ),
   );
 
   console.log("year-", y, ":\n", artistsWithLocation);
@@ -117,6 +128,7 @@ export const handler = (data: PowerYearData, y: string, scale: number) => {
     // 面積100万km²を基準に補正係数を正規化する。
     const areaAdjustedFactor = 1000 / Math.sqrt(areaKm2);
     const weightedPos = artist.pos * scale;
+    const powerIndex = getPowerIndexForPath(artist.path);
     return {
       lat: artist.lat,
       lng: artist.lng,
@@ -127,6 +139,8 @@ export const handler = (data: PowerYearData, y: string, scale: number) => {
       path: artist.path,
       pos: weightedPos,
       posAreaAdjusted: weightedPos * areaAdjustedFactor,
+      powerIndex,
+      posPowerIndex: powerIndex * POWER_INDEX_TO_POS_FACTOR * scale,
       areaKm2,
       category: artist.category,
       countryName: artist.countryName,

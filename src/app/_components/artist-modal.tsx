@@ -79,6 +79,12 @@ export const ArtistModal = ({
                 <div className="flex flex-col gap-2">
                   <div className="text-sm">{artist.category}</div>
                   <div className="text-2xl font-bold">{artist.name}</div>
+                  {typeof artist.powerIndex === "number" &&
+                    artist.powerIndex > 0 && (
+                      <div className="text-xs text-white/60">
+                        Power Index {artist.powerIndex.toFixed(4)}
+                      </div>
+                    )}
                 </div>
               </a>
             );
