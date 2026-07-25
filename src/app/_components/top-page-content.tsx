@@ -84,13 +84,14 @@ export const TopPageContent = () => {
     heatmapMetric,
     HEATMAP_YEAR_TRANSITION_MS,
   );
+  // animatedHeatmapData は選択メトリクスをすでに `pos` に集約済み。
+  // ここで posPowerIndex 等を再参照すると weight=0 になりヒートが消える。
   const heatmapPointWeight = (point: unknown): number => {
-    if (typeof point !== "object" || point === null) {
+    if (typeof point !== "object" || point === null || !("pos" in point)) {
       return 0;
     }
-    return Math.sqrt(
-      getEvaluationMetricValue(point as Record<string, unknown>, evaluationMode),
-    );
+    const { pos } = point as { pos: unknown };
+    return typeof pos === "number" ? Math.sqrt(pos) : 0;
   };
 
   useEffect(() => {
