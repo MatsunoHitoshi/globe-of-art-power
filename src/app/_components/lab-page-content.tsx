@@ -22,19 +22,22 @@ import {
   type AnalysisBundle,
   type AnalyzedPerson,
 } from "@/app/_utils/blurb-analysis";
+import {
+  placeHref,
+  resolvePlaceIdFromLabel,
+} from "@/app/_utils/conceptual-distance";
+import { LAB_MODE_OPTIONS, type LabMode } from "@/app/_utils/lab-modes";
 
 const Globe = dynamic(
   () => import("react-globe.gl").then((mod) => mod.default),
   { ssr: false },
 );
 
-type LabMode = "activity" | "topic" | "social" | "similar";
-
 const MODE_HELP: Record<LabMode, string> = {
   activity:
-    "国籍座標から、解説文で言及された都市・制度へアークを伸ばします（活動圏）。",
+    "国籍座標から、解説文で言及された都市・制度へアークを伸ばします（活動圏）。地点名をクリックすると概念距離マップへ。",
   topic:
-    "選択トピックを含む人物の言及地理をヒートマップ化します（言説×場所）。",
+    "選択トピックを含む人物の言及地理をヒートマップ化します（言説×場所）。地点詳細でトピック近さも見られます。",
   social:
     "同年リスト内の人物名が解説文に出てきた共起を、国籍間アークで示します。",
   similar:
@@ -162,25 +165,18 @@ export const LabPageContent = () => {
             ))}
           </select>
 
-          {(
-            [
-              ["activity", "Activity arcs"],
-              ["topic", "Topic heat"],
-              ["social", "Social links"],
-              ["similar", "Similar blurbs"],
-            ] as const
-          ).map(([id, label]) => (
+          {LAB_MODE_OPTIONS.map((option) => (
             <button
-              key={id}
+              key={option.id}
               type="button"
-              onClick={() => setMode(id)}
+              onClick={() => setMode(option.id)}
               className={`rounded px-2 py-1 text-xs ${
-                mode === id
+                mode === option.id
                   ? "bg-sky-500/80 text-white"
                   : "bg-white/10 hover:bg-white/20"
               }`}
             >
-              {label}
+              {option.label}
             </button>
           ))}
 
@@ -226,13 +222,32 @@ export const LabPageContent = () => {
 
             <Section title="Top mentioned places">
               <ul className="space-y-1">
-                {bundle.placeMentionCounts.slice(0, 8).map((p) => (
-                  <li key={p.label} className="flex justify-between gap-2">
-                    <span className="truncate text-white/85">{p.label}</span>
-                    <span className="text-white/50">{p.count}</span>
-                  </li>
-                ))}
+                {bundle.placeMentionCounts.slice(0, 8).map((p) => {
+                  const placeId = resolvePlaceIdFromLabel(p.label);
+                  return (
+                    <li key={p.label} className="flex justify-between gap-2">
+                      {placeId ? (
+                        <Link
+                          href={placeHref(placeId, {
+                            year,
+                            mode,
+                            topic: mode === "topic" ? topic : undefined,
+                          })}
+                          className="truncate text-sky-300 hover:underline"
+                        >
+                          {p.label}
+                        </Link>
+                      ) : (
+                        <span className="truncate text-white/85">{p.label}</span>
+                      )}
+                      <span className="text-white/50">{p.count}</span>
+                    </li>
+                  );
+                })}
               </ul>
+              <p className="mt-2 text-[11px] leading-relaxed text-white/45">
+                地点名を開くと、地理方位を保ったまま概念距離で半径を決める同心円マップへ移動します。
+              </p>
             </Section>
 
             <Section title="Topic coverage">
@@ -339,8 +354,21 @@ export const LabPageContent = () => {
                       #{selectedPerson.rank} {selectedPerson.name}
                     </div>
                     <div className="text-white/55">
-                      {selectedPerson.countryName ?? "Unknown"} ·{" "}
-                      {selectedPerson.category}
+                      {selectedPerson.countryCode ? (
+                        <Link
+                          href={placeHref(`country-${selectedPerson.countryCode}`, {
+                            year,
+                            mode,
+                            topic: mode === "topic" ? topic : undefined,
+                          })}
+                          className="text-sky-300 hover:underline"
+                        >
+                          {selectedPerson.countryName ?? selectedPerson.countryCode}
+                        </Link>
+                      ) : (
+                        (selectedPerson.countryName ?? "Unknown")
+                      )}{" "}
+                      · {selectedPerson.category}
                     </div>
                     {selectedPerson.excerpt && (
                       <p className="italic text-white/70">
@@ -350,7 +378,21 @@ export const LabPageContent = () => {
                     <p className="text-white/55">
                       Places:{" "}
                       {selectedPerson.places.length > 0
-                        ? selectedPerson.places.map((p) => p.label).join(", ")
+                        ? selectedPerson.places.map((p, idx) => (
+                            <span key={p.id}>
+                              {idx > 0 ? ", " : ""}
+                              <Link
+                                href={placeHref(p.id, {
+                                  year,
+                                  mode,
+                                  topic: mode === "topic" ? topic : undefined,
+                                })}
+                                className="text-sky-300 hover:underline"
+                              >
+                                {p.label}
+                              </Link>
+                            </span>
+                          ))
                         : "—"}
                     </p>
                     <p className="text-white/55">
