@@ -16,6 +16,9 @@ import { TOPIC_DEFS, type TopicId } from "@/app/const/topic-defs";
 import { powerData } from "@/app/_utils/globe-data-organizer";
 import {
   analyzeYearBlurbs,
+  LAB_YEAR_END,
+  LAB_YEAR_START,
+  LAB_YEARS,
   type AnalysisBundle,
   type AnalyzedPerson,
 } from "@/app/_utils/blurb-analysis";
@@ -41,7 +44,7 @@ const MODE_HELP: Record<LabMode, string> = {
 export const LabPageContent = () => {
   const globeEl = useRef<GlobeMethods>();
   const [innerWidth, innerHeight] = useWindowSize();
-  const [year, setYear] = useState<2024 | 2025>(2025);
+  const [year, setYear] = useState<number>(LAB_YEAR_END);
   const [mode, setMode] = useState<LabMode>("activity");
   const [topic, setTopic] = useState<TopicId>("biennial");
   const [bundle, setBundle] = useState<AnalysisBundle | null>(null);
@@ -55,6 +58,7 @@ export const LabPageContent = () => {
   } | null>(null);
 
   useEffect(() => {
+    if (year < LAB_YEAR_START || year > LAB_YEAR_END) return;
     const data = powerData(String(year));
     if (!data) return;
     const next = analyzeYearBlurbs(data, year);
@@ -139,7 +143,8 @@ export const LabPageContent = () => {
             Blurb Analysis Lab
           </div>
           <div className="text-[11px] text-white/60">
-            2024–2025 解説文の試験ビュー（非公開検証用）
+            {LAB_YEAR_START}–{LAB_YEAR_END}{" "}
+            解説文の試験ビュー（非公開検証用）
           </div>
         </div>
 
@@ -147,11 +152,14 @@ export const LabPageContent = () => {
           <select
             aria-label="Year"
             value={year}
-            onChange={(e) => setYear(Number(e.target.value) as 2024 | 2025)}
+            onChange={(e) => setYear(Number(e.target.value))}
             className="rounded bg-white/10 px-2 py-1 text-xs outline-none"
           >
-            <option value={2025}>2025</option>
-            <option value={2024}>2024</option>
+            {LAB_YEARS.map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
           </select>
 
           {(

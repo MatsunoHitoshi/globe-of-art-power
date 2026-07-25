@@ -3,6 +3,15 @@ import { PLACE_GAZETTEER, type PlaceEntry } from "../const/place-gazetteer";
 import { TOPIC_DEFS, type TopicId } from "../const/topic-defs";
 import type { PowerYearData } from "./globe-data-organizer";
 
+/** Lab ページで扱う解説文分析の年範囲 */
+export const LAB_YEAR_START = 2015;
+export const LAB_YEAR_END = 2025;
+
+export const LAB_YEARS: number[] = Array.from(
+  { length: LAB_YEAR_END - LAB_YEAR_START + 1 },
+  (_, i) => LAB_YEAR_END - i,
+);
+
 export type MentionedPlace = {
   id: string;
   label: string;
