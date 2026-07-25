@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo } from "react";
 import type { ConcentricMapModel } from "@/app/_utils/conceptual-distance";
 import { placeHref } from "@/app/_utils/conceptual-distance";
@@ -121,12 +120,10 @@ export const LabConcentricMap = ({
           );
         })}
 
-        {plotted.map((neighbor) => (
-          <g key={neighbor.place.id}>
-            <Link
-              href={placeHref(neighbor.place.id, { year, mode, topic })}
-              className="cursor-pointer"
-            >
+        {plotted.map((neighbor) => {
+          const href = placeHref(neighbor.place.id, { year, mode, topic });
+          return (
+            <a key={neighbor.place.id} href={href}>
               <circle
                 cx={neighbor.x}
                 cy={neighbor.y}
@@ -145,9 +142,9 @@ export const LabConcentricMap = ({
               >
                 {neighbor.place.label}
               </text>
-            </Link>
-          </g>
-        ))}
+            </a>
+          );
+        })}
 
         {/* 原点 */}
         <circle
