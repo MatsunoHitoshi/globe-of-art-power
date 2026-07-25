@@ -72,7 +72,15 @@ export const countyCodes = [
   { code: "BG", lat: 42.7339, lng: 25.4858, countryName: "Bulgaria" },
   { code: "PT", lat: 39.3999, lng: -8.2245, countryName: "Portugal" },
   { code: "IR", lat: 32.4279, lng: 53.688, countryName: "Iran" },
+  { code: "RS", lat: 44.0165, lng: 21.0059, countryName: "Serbia" },
+  { code: "SN", lat: 14.4974, lng: -14.4524, countryName: "Senegal" },
 ];
+
+/** データ側の表記ゆれをテーブルの code に揃える */
+const COUNTRY_CODE_ALIASES: Record<string, string> = {
+  "United Arab Emirates": "UAE",
+  AE: "UAE",
+};
 
 const COUNTRY_AREA_KM2: Record<string, number> = {
   US: 9833520,
@@ -138,17 +146,22 @@ const COUNTRY_AREA_KM2: Record<string, number> = {
   BG: 110879,
   PT: 92212,
   IR: 1648195,
+  RS: 88361,
+  SN: 196722,
+};
+
+export const normalizeCountryCode = (code: string) => {
+  return COUNTRY_CODE_ALIASES[code] ?? code;
 };
 
 export const getCountryLocation = (code: string) => {
-  const res = countyCodes.find((data) => {
-    return data.code === code;
-  });
+  const normalized = normalizeCountryCode(code);
+  const res = countyCodes.find((data) => data.code === normalized);
   if (!res) console.log(code, " <- not found");
-  // return { lat: res?.lat, lng: res?.lng, code: res?.code };
   return res;
 };
 
 export const getCountryAreaKm2 = (code: string) => {
-  return COUNTRY_AREA_KM2[code] ?? 1_000_000;
+  const normalized = normalizeCountryCode(code);
+  return COUNTRY_AREA_KM2[normalized] ?? 1_000_000;
 };
