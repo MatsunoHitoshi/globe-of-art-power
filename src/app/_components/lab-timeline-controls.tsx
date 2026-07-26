@@ -84,7 +84,7 @@ export const LabTimelineControls = ({
           )}
         </div>
 
-        <div className="relative pt-1">
+        <div className="relative flex h-10 items-center">
           <input
             type="range"
             aria-label="年をスクラブ"
@@ -94,17 +94,17 @@ export const LabTimelineControls = ({
             disabled={disabled}
             value={Math.min(progress, max)}
             onChange={(e) => onProgressChange(Number(e.target.value))}
-            className="h-10 w-full cursor-pointer appearance-none bg-transparent accent-sky-400 disabled:opacity-40 [&::-webkit-slider-runnable-track]:h-2 [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-runnable-track]:bg-white/15 [&::-webkit-slider-thumb]:h-7 [&::-webkit-slider-thumb]:w-7 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-sky-300 [&::-webkit-slider-thumb]:bg-sky-500 [&::-webkit-slider-thumb]:shadow-md"
+            className="lab-range h-2 w-full cursor-pointer appearance-none bg-transparent disabled:opacity-40 [&::-webkit-slider-runnable-track]:h-2 [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-runnable-track]:bg-white/15 [&::-webkit-slider-thumb]:-mt-2.5 [&::-webkit-slider-thumb]:h-7 [&::-webkit-slider-thumb]:w-7 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-sky-300 [&::-webkit-slider-thumb]:bg-sky-500 [&::-webkit-slider-thumb]:shadow-md [&::-moz-range-track]:h-2 [&::-moz-range-track]:rounded-full [&::-moz-range-track]:bg-white/15 [&::-moz-range-thumb]:h-7 [&::-moz-range-thumb]:w-7 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-sky-300 [&::-moz-range-thumb]:bg-sky-500"
           />
-          <div className="pointer-events-none mt-0.5 flex justify-between px-0.5 text-[10px] text-white/40">
-            {years.length <= 6
-              ? years.map((y) => <span key={y}>{y}</span>)
-              : [years[0], years[Math.floor(years.length / 2)], years[years.length - 1]].map(
-                  (y, i) => (
-                    <span key={`${y}-${i}`}>{y}</span>
-                  ),
-                )}
-          </div>
+        </div>
+        <div className="pointer-events-none mt-0.5 flex justify-between px-0.5 text-[10px] text-white/40">
+          {years.length <= 6
+            ? years.map((y) => <span key={y}>{y}</span>)
+            : [years[0], years[Math.floor(years.length / 2)], years[years.length - 1]].map(
+                (y, i) => (
+                  <span key={`${y}-${i}`}>{y}</span>
+                ),
+              )}
         </div>
 
         <div className="flex items-center gap-2">

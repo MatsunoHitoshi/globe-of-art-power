@@ -195,7 +195,12 @@ export const LabConcentricMap = ({
 
   const edgePaths = useMemo(() => {
     if (!showEdges) return [];
-    return model.relationEdges
+    // 年補間中は model.relationEdges が空になるので、離散年のエッジを補完する
+    const edges =
+      model.relationEdges.length > 0
+        ? model.relationEdges
+        : (warpModel?.relationEdges ?? []);
+    return edges
       .map((edge) => {
         const from = pointById.get(edge.fromId);
         const to = pointById.get(edge.toId);
@@ -233,10 +238,14 @@ export const LabConcentricMap = ({
         };
       })
       .filter((edge): edge is NonNullable<typeof edge> => edge !== null);
-  }, [model.relationEdges, pointById, showEdges]);
+  }, [model.relationEdges, warpModel?.relationEdges, pointById, showEdges]);
 
-  const spokeCount = model.relationEdges.filter((e) => e.kind === "spoke").length;
-  const peerCount = model.relationEdges.filter((e) => e.kind === "peer").length;
+  const edgeSource =
+    model.relationEdges.length > 0
+      ? model.relationEdges
+      : (warpModel?.relationEdges ?? []);
+  const spokeCount = edgeSource.filter((e) => e.kind === "spoke").length;
+  const peerCount = edgeSource.filter((e) => e.kind === "peer").length;
   const showGeoGhosts = morph > 0.08 && morph < 0.98;
   const yearText =
     yearLabel !== undefined
@@ -262,7 +271,7 @@ export const LabConcentricMap = ({
           step={0.01}
           value={morph}
           onChange={(e) => setMorph(Number(e.target.value))}
-          className="h-8 min-w-0 flex-1 accent-sky-400 sm:h-1.5"
+          className="h-2 min-w-0 flex-1 cursor-pointer appearance-none bg-transparent [&::-webkit-slider-runnable-track]:h-2 [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-runnable-track]:bg-white/15 [&::-webkit-slider-thumb]:-mt-1.5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-sky-300 [&::-webkit-slider-thumb]:bg-sky-500 [&::-moz-range-track]:h-2 [&::-moz-range-track]:rounded-full [&::-moz-range-track]:bg-white/15 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-sky-300 [&::-moz-range-thumb]:bg-sky-500"
         />
         <div className="flex w-full items-center justify-between gap-2 sm:ml-auto sm:w-auto sm:justify-end">
           <div className="flex items-center gap-1.5 text-[11px] text-white/55">

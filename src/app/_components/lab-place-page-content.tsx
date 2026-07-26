@@ -275,7 +275,7 @@ export const LabPlacePageContent = ({
               yearLabel={resolved.displayYear}
               mode={mode}
               topic={mode === "topic" ? topic : undefined}
-              showEdges={!resolved.transitioning && !playing}
+              showEdges
               lightBackground={resolved.transitioning || playing}
               stableMaxGeoKm={stableMaxGeoKm}
               labelLimit={12}
