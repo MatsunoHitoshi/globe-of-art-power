@@ -96,19 +96,20 @@ export const anchorsFromNeighbors = (
     conceptualDistance: number;
   }[],
   layout: Pick<AeqdLayout, "minRadius" | "maxRadius" | "maxGeoKm">,
-  limit = 24,
+  limit = 64,
 ): RadialWarpAnchor[] => {
   return neighbors
     .map((n) => {
-      const geoT = Math.min(1, Math.max(0, n.geoDistanceKm / layout.maxGeoKm));
-      const conceptT = Math.min(1, Math.max(0, n.conceptualDistance));
+      const geoRadius = aeqdRadiusFromGeoKm(n.geoDistanceKm, layout);
+      const conceptRadius = conceptRadiusFromDistance(
+        n.conceptualDistance,
+        layout,
+      );
       return {
         bearing: n.bearing,
-        geoRadius: layout.maxRadius * geoT,
-        conceptRadius:
-          layout.minRadius +
-          conceptT * (layout.maxRadius - layout.minRadius),
-        conceptualDistance: conceptT,
+        geoRadius,
+        conceptRadius,
+        conceptualDistance: Math.min(1, Math.max(0, n.conceptualDistance)),
       };
     })
     .filter((a) => a.geoRadius > 1 && Number.isFinite(a.geoRadius))
@@ -119,6 +120,26 @@ export const anchorsFromNeighbors = (
       geoRadius,
       conceptRadius,
     }));
+};
+
+/** AEQD 投影上の地理半径（陸地頂点と同じ定義） */
+export const aeqdRadiusFromGeoKm = (
+  geoKm: number,
+  layout: Pick<AeqdLayout, "maxRadius" | "maxGeoKm">,
+) => {
+  const geoT = Math.min(1, Math.max(0, geoKm / layout.maxGeoKm));
+  return layout.maxRadius * geoT;
+};
+
+/** 概念距離 0..1 → 表示半径（制御点の目標半径） */
+export const conceptRadiusFromDistance = (
+  conceptualDistance: number,
+  layout: Pick<AeqdLayout, "minRadius" | "maxRadius">,
+) => {
+  const t = Math.min(1, Math.max(0, conceptualDistance));
+  return (
+    layout.minRadius + t * (layout.maxRadius - layout.minRadius)
+  );
 };
 
 /** 年A/Bのアンカーを方位で対応づけて conceptRadius を補間 */
@@ -190,29 +211,49 @@ const angularDelta = (from: number, to: number) => {
   return d;
 };
 
-const radialScaleAtBearing = (
+/**
+ * 時間地図（一点中心）に近い半径写像:
+ * 各制御点は方位を保ったまま geoR→conceptR へ写し、
+ * 中間の地形は方位近傍の制御点スケールを IDW。
+ * 恒等 PRIOR は使わない（制御点上で点と地形が一致するようにする）。
+ */
+const remapGeoRadius = (
+  geoRadius: number,
   bearing: number,
   anchors: RadialWarpAnchor[],
   layout: Pick<AeqdLayout, "maxRadius">,
 ) => {
-  if (anchors.length === 0) return 1;
-  const floorR = layout.maxRadius * 0.06;
-  const PRIOR = 0.45;
-  let sumW = PRIOR;
-  let sumS = PRIOR;
+  if (anchors.length === 0 || geoRadius < 1e-6) return geoRadius;
+
+  const floorR = layout.maxRadius * 0.05;
+  const angEps = 0.018; // ~1°
+  let sumW = 0;
+  let sumPred = 0;
+  let maxW = 0;
+
   for (const anchor of anchors) {
     const dθ = angularDistance(bearing, anchor.bearing);
-    const w = 1 / (dθ * dθ + 0.045 * 0.045);
-    const raw = anchor.conceptRadius / Math.max(anchor.geoRadius, floorR);
-    const s = Math.min(3.5, Math.max(0.12, raw));
+    const w = 1 / (dθ * dθ + angEps * angEps);
+    const scale = Math.min(
+      3.5,
+      Math.max(0.12, anchor.conceptRadius / Math.max(anchor.geoRadius, floorR)),
+    );
+    // 原点を通る相似変換（一点中心の時間地図でよく使うレイ方向の線形写像）
+    const pred = geoRadius * scale;
     sumW += w;
-    sumS += w * s;
+    sumPred += w * pred;
+    maxW = Math.max(maxW, w);
   }
-  return sumS / sumW;
+
+  const weighted = sumPred / sumW;
+  // 制御点が無い方位だけ地理半径へ戻す
+  const peak = 1 / (angEps * angEps);
+  const blend = Math.min(1, maxW / (peak * 0.12));
+  return geoRadius * (1 - blend) + weighted * blend;
 };
 
 /**
- * 投影済み (x,y) を、地点アンカーの地理→概念スケールで半径方向にワープ。
+ * 投影済み (x,y) を、地点アンカーの地理→概念写像で半径方向にワープ。
  * morph=0 で恒等、1 で概念レイアウトに追従。
  */
 export const warpProjectedXy = (
@@ -231,8 +272,8 @@ export const warpProjectedXy = (
   if (r < 1e-6) return { x, y };
 
   const bearing = Math.atan2(dy, dx) + Math.PI / 2;
-  const scale = radialScaleAtBearing(bearing, anchors, layout);
-  const rWarped = r * ((1 - t) + t * scale);
+  const rConcept = remapGeoRadius(r, bearing, anchors, layout);
+  const rWarped = r * (1 - t) + rConcept * t;
   const ux = dx / r;
   const uy = dy / r;
   return {
@@ -248,11 +289,11 @@ const warpPolarPoint = (
   morph: number,
 ) => {
   const t = Math.min(1, Math.max(0, morph));
-  const scale =
-    t < 1e-6 || anchors.length === 0
-      ? 1
-      : radialScaleAtBearing(point.bearing, anchors, layout);
-  const r = point.r * ((1 - t) + t * scale);
+  if (t < 1e-6 || anchors.length === 0) {
+    return polarToXy(layout.center, point.bearing, point.r);
+  }
+  const rConcept = remapGeoRadius(point.r, point.bearing, anchors, layout);
+  const r = point.r * (1 - t) + rConcept * t;
   return polarToXy(layout.center, point.bearing, r);
 };
 
@@ -450,13 +491,9 @@ export const morphRadius = (
   morph: number,
   layout: Pick<AeqdLayout, "minRadius" | "maxRadius" | "maxGeoKm">,
 ) => {
-  const geoT = Math.min(1, Math.max(0, geoKm / layout.maxGeoKm));
-  const rGeo =
-    layout.minRadius + geoT * (layout.maxRadius - layout.minRadius);
-  const rConcept =
-    layout.minRadius +
-    Math.min(1, Math.max(0, conceptualDistance)) *
-      (layout.maxRadius - layout.minRadius);
+  // 地理側は AEQD 陸地と同じ半径定義（ここでずらすと点と海岸線が一致しない）
+  const rGeo = aeqdRadiusFromGeoKm(geoKm, layout);
+  const rConcept = conceptRadiusFromDistance(conceptualDistance, layout);
   const t = Math.min(1, Math.max(0, morph));
   return rGeo * (1 - t) + rConcept * t;
 };

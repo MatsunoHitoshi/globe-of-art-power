@@ -100,8 +100,9 @@ export const LabConcentricMap = ({
   }, [layout, model.origin.lat, model.origin.lng]);
 
   const warpAnchors = useMemo(
-    () => anchorsFromNeighbors(landSource.neighbors, layout, 20),
-    [landSource.neighbors, layout],
+    // 表示する地点はすべて制御点にする（時間地図の第1段階）
+    () => anchorsFromNeighbors(landSource.neighbors, layout, plotLimit),
+    [landSource.neighbors, layout, plotLimit],
   );
 
   const background = useMemo(() => {
@@ -536,7 +537,7 @@ export const LabConcentricMap = ({
 
       <div className="space-y-1 border-t border-white/10 px-3 py-2 text-[11px] leading-relaxed text-white/55 sm:px-4">
         <p>
-          方位は地理のまま、半径と陸地を概念距離でワープします。陸地は地理投影をキャッシュし、時系列アニメでは点と同じアンカーで半径だけ追従します。
+          一点中心の時間地図と同様、方位は地理のまま、制御点（表示地点）は概念距離の半径へ写し、陸地も同じ写像で歪めます。制御点上では点と地形が一致するよう設計しています。制御点の間の海岸線や、同一方位に複数の異なるスケールが競合する箇所では近似になります。
         </p>
         {showEdges && (
           <p>
