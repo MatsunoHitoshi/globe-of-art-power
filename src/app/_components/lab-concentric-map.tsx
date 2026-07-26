@@ -16,6 +16,15 @@ type Props = {
 
 const RING_COUNT = 4;
 
+type PlottedPoint = {
+  id: string;
+  x: number;
+  y: number;
+  label: string;
+  kind: string;
+  href?: string;
+};
+
 export const LabConcentricMap = ({
   model,
   year,
@@ -27,17 +36,84 @@ export const LabConcentricMap = ({
   const maxRadius = size * 0.42;
   const minRadius = size * 0.08;
 
-  const plotted = useMemo(() => {
+  const plottedNeighbors = useMemo(() => {
     return model.neighbors.map((neighbor) => {
       const radius =
         minRadius + neighbor.conceptualDistance * (maxRadius - minRadius);
-      // SVG: 0° = east, geographic bearing 0 = north → rotate
       const angle = neighbor.bearing - Math.PI / 2;
       const x = center + radius * Math.cos(angle);
       const y = center + radius * Math.sin(angle);
-      return { ...neighbor, x, y, radius };
+      return {
+        id: neighbor.place.id,
+        x,
+        y,
+        label: neighbor.place.label,
+        kind: neighbor.place.kind,
+        href: placeHref(neighbor.place.id, { year, mode, topic }),
+      } satisfies PlottedPoint;
     });
-  }, [model.neighbors, center, maxRadius, minRadius]);
+  }, [model.neighbors, center, maxRadius, minRadius, year, mode, topic]);
+
+  const pointById = useMemo(() => {
+    const map = new Map<string, PlottedPoint>();
+    map.set(model.origin.id, {
+      id: model.origin.id,
+      x: center,
+      y: center,
+      label: model.origin.label,
+      kind: model.origin.kind,
+    });
+    for (const point of plottedNeighbors) {
+      map.set(point.id, point);
+    }
+    return map;
+  }, [model.origin, plottedNeighbors, center]);
+
+  const edgePaths = useMemo(() => {
+    return model.relationEdges
+      .map((edge) => {
+        const from = pointById.get(edge.fromId);
+        const to = pointById.get(edge.toId);
+        if (!from || !to) return null;
+
+        // わずかに外側へ膨らむ二次曲線（交差を読みやすく）
+        const mx = (from.x + to.x) / 2;
+        const my = (from.y + to.y) / 2;
+        const dx = to.x - from.x;
+        const dy = to.y - from.y;
+        const len = Math.hypot(dx, dy) || 1;
+        const bulge = edge.kind === "spoke" ? 0.08 : 0.14;
+        const cx = mx + (-dy / len) * len * bulge;
+        const cy = my + (dx / len) * len * bulge;
+        const d = `M ${from.x} ${from.y} Q ${cx} ${cy} ${to.x} ${to.y}`;
+
+        const opacity =
+          edge.kind === "spoke"
+            ? 0.18 + edge.weight * 0.42
+            : 0.1 + edge.weight * 0.28;
+        const strokeWidth =
+          edge.kind === "spoke"
+            ? 0.7 + edge.weight * 1.6
+            : 0.45 + edge.weight * 1.1;
+        const stroke =
+          edge.kind === "spoke"
+            ? "rgba(125, 211, 252, 0.95)"
+            : "rgba(244, 114, 182, 0.85)";
+
+        return {
+          key: `${edge.kind}-${edge.fromId}-${edge.toId}`,
+          d,
+          opacity,
+          strokeWidth,
+          stroke,
+          kind: edge.kind,
+        };
+      })
+      .filter((edge): edge is NonNullable<typeof edge> => edge !== null);
+  }, [model.relationEdges, pointById]);
+
+  const spokeCount = model.relationEdges.filter((e) => e.kind === "spoke").length;
+  const peerCount = model.relationEdges.filter((e) => e.kind === "peer").length;
 
   return (
     <div className="relative w-full overflow-hidden rounded-2xl border border-white/10 bg-slate-950/80">
@@ -87,7 +163,6 @@ export const LabConcentricMap = ({
           );
         })}
 
-        {/* 方位の補助線 */}
         {[0, 90, 180, 270].map((deg) => {
           const rad = ((deg - 90) * Math.PI) / 180;
           const x2 = center + maxRadius * Math.cos(rad);
@@ -120,33 +195,42 @@ export const LabConcentricMap = ({
           );
         })}
 
-        {plotted.map((neighbor) => {
-          const href = placeHref(neighbor.place.id, { year, mode, topic });
-          return (
-            <a key={neighbor.place.id} href={href}>
-              <circle
-                cx={neighbor.x}
-                cy={neighbor.y}
-                r={neighbor.place.kind === "country" ? 7 : 5.5}
-                fill={
-                  neighbor.place.kind === "country" ? "#fbbf24" : "#38bdf8"
-                }
-                stroke="rgba(15,23,42,0.9)"
-                strokeWidth={1.5}
-              />
-              <text
-                x={neighbor.x + 9}
-                y={neighbor.y + 3}
-                fill="rgba(226,232,240,0.92)"
-                fontSize={11}
-              >
-                {neighbor.place.label}
-              </text>
-            </a>
-          );
-        })}
+        {/* 関係エッジ: 地点の下に薄い曲線 */}
+        <g aria-hidden="true">
+          {edgePaths.map((edge) => (
+            <path
+              key={edge.key}
+              d={edge.d}
+              fill="none"
+              stroke={edge.stroke}
+              strokeWidth={edge.strokeWidth}
+              strokeOpacity={edge.opacity}
+              strokeLinecap="round"
+            />
+          ))}
+        </g>
 
-        {/* 原点 */}
+        {plottedNeighbors.map((neighbor) => (
+          <a key={neighbor.id} href={neighbor.href}>
+            <circle
+              cx={neighbor.x}
+              cy={neighbor.y}
+              r={neighbor.kind === "country" ? 7 : 5.5}
+              fill={neighbor.kind === "country" ? "#fbbf24" : "#38bdf8"}
+              stroke="rgba(15,23,42,0.9)"
+              strokeWidth={1.5}
+            />
+            <text
+              x={neighbor.x + 9}
+              y={neighbor.y + 3}
+              fill="rgba(226,232,240,0.92)"
+              fontSize={11}
+            >
+              {neighbor.label}
+            </text>
+          </a>
+        ))}
+
         <circle
           cx={center}
           cy={center}
@@ -167,9 +251,15 @@ export const LabConcentricMap = ({
         </text>
       </svg>
 
-      <p className="border-t border-white/10 px-4 py-2 text-[11px] leading-relaxed text-white/55">
-        角度は地理的な方位、半径は選択モードの概念距離です。地理的に近くても言説・社会関係が遠ければ外周へ、その逆なら中心寄りに配置されます。
-      </p>
+      <div className="space-y-1 border-t border-white/10 px-4 py-2 text-[11px] leading-relaxed text-white/55">
+        <p>
+          角度は地理的な方位、半径は選択モードの概念距離です。薄い線は関係エッジで、
+          <span className="text-sky-300/90"> 水色</span>が原点からの接続（
+          {spokeCount}）、
+          <span className="text-pink-300/90"> 桃色</span>が近傍地点同士（
+          {peerCount}）です。線が太い／濃いほど関係が強いです。
+        </p>
+      </div>
     </div>
   );
 };

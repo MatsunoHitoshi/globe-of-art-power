@@ -26,11 +26,22 @@ export type ConceptualNeighbor = {
   similarity: number;
 };
 
+export type RelationEdge = {
+  fromId: string;
+  toId: string;
+  /** 0..1 正規化強度 */
+  weight: number;
+  /** 原点からのスポークか、近傍同士か */
+  kind: "spoke" | "peer";
+};
+
 export type ConcentricMapModel = {
   origin: PlaceNode;
   year: number;
   mode: LabMode;
   neighbors: ConceptualNeighbor[];
+  /** 同心円上に薄く描く関係エッジ */
+  relationEdges: RelationEdge[];
 };
 
 const toRad = (deg: number) => (deg * Math.PI) / 180;
@@ -252,6 +263,97 @@ const pairSimilarity = (
   return similarAffinity(origin, other, people);
 };
 
+const MODE_EDGE_THRESHOLD: Record<LabMode, number> = {
+  activity: 0.04,
+  topic: 0.55,
+  social: 0.08,
+  similar: 0.08,
+};
+
+const buildRelationEdges = (
+  origin: PlaceNode,
+  neighbors: ConceptualNeighbor[],
+  mode: LabMode,
+  bundle: AnalysisBundle,
+  people: Map<string, AnalyzedPerson>,
+): RelationEdge[] => {
+  const threshold = MODE_EDGE_THRESHOLD[mode];
+  const edges: RelationEdge[] = [];
+
+  // 1) 原点 → 関係のある地点（スポーク）
+  for (const neighbor of neighbors) {
+    if (neighbor.similarity < threshold) continue;
+    edges.push({
+      fromId: origin.id,
+      toId: neighbor.place.id,
+      weight: neighbor.similarity,
+      kind: "spoke",
+    });
+  }
+
+  // 2) 近い地点同士のピアエッジ（上位近傍のみ・上位エッジに制限）
+  const peerPool = neighbors.slice(0, 18);
+  const peerRaw: { fromId: string; toId: string; similarity: number }[] = [];
+  for (let i = 0; i < peerPool.length; i++) {
+    for (let j = i + 1; j < peerPool.length; j++) {
+      const a = peerPool[i]!;
+      const b = peerPool[j]!;
+      const similarity = pairSimilarity(
+        a.place,
+        b.place,
+        mode,
+        bundle,
+        people,
+      );
+      const normalized =
+        mode === "social"
+          ? similarity // 後で max 正規化
+          : Math.max(0, Math.min(1, similarity));
+      if (mode !== "social" && normalized < threshold) continue;
+      peerRaw.push({
+        fromId: a.place.id,
+        toId: b.place.id,
+        similarity: normalized,
+      });
+    }
+  }
+
+  if (mode === "social" && peerRaw.length > 0) {
+    const maxPeer = Math.max(...peerRaw.map((e) => e.similarity), 1e-9);
+    for (const edge of peerRaw) {
+      const weight = edge.similarity / maxPeer;
+      if (weight < threshold) continue;
+      edges.push({
+        fromId: edge.fromId,
+        toId: edge.toId,
+        weight,
+        kind: "peer",
+      });
+    }
+  } else {
+    for (const edge of peerRaw) {
+      edges.push({
+        fromId: edge.fromId,
+        toId: edge.toId,
+        weight: edge.similarity,
+        kind: "peer",
+      });
+    }
+  }
+
+  // ピアは強い順に最大 24 本、スポークも最大 28 本に制限
+  const spokes = edges
+    .filter((e) => e.kind === "spoke")
+    .sort((a, b) => b.weight - a.weight)
+    .slice(0, 28);
+  const peers = edges
+    .filter((e) => e.kind === "peer")
+    .sort((a, b) => b.weight - a.weight)
+    .slice(0, 24);
+
+  return [...spokes, ...peers];
+};
+
 export const buildConcentricMapModel = (
   bundle: AnalysisBundle,
   originId: string,
@@ -275,7 +377,9 @@ export const buildConcentricMapModel = (
   const neighbors: ConceptualNeighbor[] = raw
     .map(({ place, similarity }) => {
       const normalizedSim =
-        mode === "social" ? similarity / maxSim : Math.max(0, Math.min(1, similarity));
+        mode === "social"
+          ? similarity / maxSim
+          : Math.max(0, Math.min(1, similarity));
       return {
         place,
         conceptualDistance: 1 - normalizedSim,
@@ -296,6 +400,7 @@ export const buildConcentricMapModel = (
     year: bundle.year,
     mode,
     neighbors,
+    relationEdges: buildRelationEdges(origin, neighbors, mode, bundle, people),
   };
 };
 
