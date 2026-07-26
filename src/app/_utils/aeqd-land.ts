@@ -307,9 +307,16 @@ const sampleFeatureAsPolarRings = (
       }
       current = [];
     },
-    polygonStart() {},
-    polygonEnd() {},
-    sphere() {},
+    // d3 GeoStream の必須フック（リング収集は lineStart/lineEnd で行う）
+    polygonStart() {
+      return;
+    },
+    polygonEnd() {
+      return;
+    },
+    sphere() {
+      return;
+    },
   };
 
   geoStream(object, layout.projection.stream(sink));
