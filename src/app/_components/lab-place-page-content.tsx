@@ -111,7 +111,7 @@ export const LabPlacePageContent = ({
               {origin?.label ?? placeId}
             </div>
             <div className="text-[11px] text-white/55">
-              概念距離マップ · 角度=地理方位 / 半径=モード別近さ
+              概念距離マップ · 角度=地理方位 / 半径=概念近さ（陸地もワープ）
             </div>
           </div>
 

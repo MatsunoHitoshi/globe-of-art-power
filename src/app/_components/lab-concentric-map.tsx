@@ -4,6 +4,7 @@ import { useId, useMemo, useState } from "react";
 import type { ConcentricMapModel } from "@/app/_utils/conceptual-distance";
 import { placeHref } from "@/app/_utils/conceptual-distance";
 import {
+  anchorsFromNeighbors,
   buildAeqdBackgroundPaths,
   createAeqdLayout,
   morphRadius,
@@ -66,10 +67,21 @@ export const LabConcentricMap = ({
     });
   }, [model.origin.lat, model.origin.lng, size, maxGeoKm]);
 
+  const warpAnchors = useMemo(
+    () => anchorsFromNeighbors(model.neighbors, layout),
+    [model.neighbors, layout],
+  );
+
   const background = useMemo(
     () =>
-      buildAeqdBackgroundPaths(layout, model.origin.lat, model.origin.lng),
-    [layout, model.origin.lat, model.origin.lng],
+      buildAeqdBackgroundPaths(
+        layout,
+        model.origin.lat,
+        model.origin.lng,
+        warpAnchors,
+        morph,
+      ),
+    [layout, model.origin.lat, model.origin.lng, warpAnchors, morph],
   );
 
   const plottedNeighbors = useMemo(() => {
@@ -184,11 +196,11 @@ export const LabConcentricMap = ({
         />
         <div className="flex items-center gap-2 text-[11px] text-white/55">
           <span className={morph < 0.15 ? "text-sky-300" : undefined}>
-            地理 AEQD
+            地理
           </span>
           <span>→</span>
           <span className={morph > 0.85 ? "text-pink-300" : undefined}>
-            概念距離
+            概念（陸地ワープ）
           </span>
           <span className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-white/70">
             {morph.toFixed(2)}
@@ -223,7 +235,7 @@ export const LabConcentricMap = ({
         viewBox={`0 0 ${size} ${size}`}
         className="mx-auto h-auto w-full max-w-3xl"
         role="img"
-        aria-label={`${model.origin.label} 中心の正距方位図法と概念距離マップ`}
+        aria-label={`${model.origin.label} 中心の概念距離マップ（陸地ワープ付き）`}
       >
         <defs>
           <radialGradient id={gradId} cx="50%" cy="50%" r="50%">
@@ -242,8 +254,17 @@ export const LabConcentricMap = ({
           fill={`url(#${gradId})`}
         />
 
-        {/* A: 正距方位の陸地背景 */}
+        {/* B: 概念距離に合わせて半径方向にワープした陸地 */}
         <g clipPath={`url(#clip-${reactId})`} opacity={0.9}>
+          {showGeoGhosts && background.landPathGeo && (
+            <path
+              d={background.landPathGeo}
+              fill="none"
+              stroke="rgba(251,191,36,0.22)"
+              strokeWidth={0.8}
+              strokeDasharray="3 4"
+            />
+          )}
           {background.graticulePath && (
             <path
               d={background.graticulePath}
@@ -409,8 +430,9 @@ export const LabConcentricMap = ({
 
       <div className="space-y-1 border-t border-white/10 px-4 py-2 text-[11px] leading-relaxed text-white/55">
         <p>
-          背景は原点中心の<strong className="font-medium text-white/70">正距方位図法</strong>
-          （角度=方位、半径=大圏距離）。点の半径をスライダーで地理距離⇔概念距離に補間します。モーフ中は琥珀の点・破線が地理上の位置です。
+          方位角 θ は地理のまま、半径を地点アンカーの地理→概念写像で補間し、
+          <strong className="font-medium text-white/70">陸地輪郭も同じ写像でワープ</strong>
+          します（B案）。スライダー 0=正距方位、1=概念距離レイアウト。モーフ中の琥珀破線は地理上の陸地・点です。
         </p>
         <p>
           薄い線は関係エッジ（
