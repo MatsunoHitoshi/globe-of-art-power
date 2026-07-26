@@ -1,8 +1,14 @@
 "use client";
 
-import { useMemo } from "react";
+import { useId, useMemo, useState } from "react";
 import type { ConcentricMapModel } from "@/app/_utils/conceptual-distance";
 import { placeHref } from "@/app/_utils/conceptual-distance";
+import {
+  buildAeqdBackgroundPaths,
+  createAeqdLayout,
+  morphRadius,
+  polarToXy,
+} from "@/app/_utils/aeqd-land";
 import type { LabMode } from "@/app/_utils/lab-modes";
 import type { TopicId } from "@/app/const/topic-defs";
 
@@ -20,6 +26,8 @@ type PlottedPoint = {
   id: string;
   x: number;
   y: number;
+  geoX: number;
+  geoY: number;
   label: string;
   kind: string;
   href?: string;
@@ -32,34 +40,75 @@ export const LabConcentricMap = ({
   topic,
   size = 720,
 }: Props) => {
-  const center = size / 2;
-  const maxRadius = size * 0.42;
-  const minRadius = size * 0.08;
+  const reactId = useId();
+  const gradId = `lab-ring-fill-${reactId}`;
+  const [morph, setMorph] = useState(1);
+
+  const maxGeoKm = useMemo(() => {
+    const fromNeighbors = Math.max(
+      ...model.neighbors.map((n) => n.geoDistanceKm),
+      0,
+    );
+    // 近傍が極端に近い場合でも地球スケールが見えるよう下限を設ける
+    return Math.max(fromNeighbors, 2500);
+  }, [model.neighbors]);
+
+  const layout = useMemo(() => {
+    const maxRadius = size * 0.42;
+    const minRadius = size * 0.06;
+    return createAeqdLayout({
+      originLat: model.origin.lat,
+      originLng: model.origin.lng,
+      size,
+      maxRadius,
+      minRadius,
+      maxGeoKm,
+    });
+  }, [model.origin.lat, model.origin.lng, size, maxGeoKm]);
+
+  const background = useMemo(
+    () =>
+      buildAeqdBackgroundPaths(layout, model.origin.lat, model.origin.lng),
+    [layout, model.origin.lat, model.origin.lng],
+  );
 
   const plottedNeighbors = useMemo(() => {
     return model.neighbors.map((neighbor) => {
-      const radius =
-        minRadius + neighbor.conceptualDistance * (maxRadius - minRadius);
-      const angle = neighbor.bearing - Math.PI / 2;
-      const x = center + radius * Math.cos(angle);
-      const y = center + radius * Math.sin(angle);
+      const rMorph = morphRadius(
+        neighbor.geoDistanceKm,
+        neighbor.conceptualDistance,
+        morph,
+        layout,
+      );
+      const rGeo = morphRadius(
+        neighbor.geoDistanceKm,
+        neighbor.conceptualDistance,
+        0,
+        layout,
+      );
+      const pos = polarToXy(layout.center, neighbor.bearing, rMorph);
+      const geoPos = polarToXy(layout.center, neighbor.bearing, rGeo);
       return {
         id: neighbor.place.id,
-        x,
-        y,
+        x: pos.x,
+        y: pos.y,
+        geoX: geoPos.x,
+        geoY: geoPos.y,
         label: neighbor.place.label,
         kind: neighbor.place.kind,
         href: placeHref(neighbor.place.id, { year, mode, topic }),
       } satisfies PlottedPoint;
     });
-  }, [model.neighbors, center, maxRadius, minRadius, year, mode, topic]);
+  }, [model.neighbors, layout, morph, year, mode, topic]);
 
   const pointById = useMemo(() => {
     const map = new Map<string, PlottedPoint>();
     map.set(model.origin.id, {
       id: model.origin.id,
-      x: center,
-      y: center,
+      x: layout.center,
+      y: layout.center,
+      geoX: layout.center,
+      geoY: layout.center,
       label: model.origin.label,
       kind: model.origin.kind,
     });
@@ -67,7 +116,7 @@ export const LabConcentricMap = ({
       map.set(point.id, point);
     }
     return map;
-  }, [model.origin, plottedNeighbors, center]);
+  }, [model.origin, plottedNeighbors, layout.center]);
 
   const edgePaths = useMemo(() => {
     return model.relationEdges
@@ -76,7 +125,6 @@ export const LabConcentricMap = ({
         const to = pointById.get(edge.toId);
         if (!from || !to) return null;
 
-        // わずかに外側へ膨らむ二次曲線（交差を読みやすく）
         const mx = (from.x + to.x) / 2;
         const my = (from.y + to.y) / 2;
         const dx = to.x - from.x;
@@ -89,8 +137,8 @@ export const LabConcentricMap = ({
 
         const opacity =
           edge.kind === "spoke"
-            ? 0.18 + edge.weight * 0.42
-            : 0.1 + edge.weight * 0.28;
+            ? 0.16 + edge.weight * 0.4
+            : 0.09 + edge.weight * 0.26;
         const strokeWidth =
           edge.kind === "spoke"
             ? 0.7 + edge.weight * 1.6
@@ -106,7 +154,6 @@ export const LabConcentricMap = ({
           opacity,
           strokeWidth,
           stroke,
-          kind: edge.kind,
         };
       })
       .filter((edge): edge is NonNullable<typeof edge> => edge !== null);
@@ -114,50 +161,138 @@ export const LabConcentricMap = ({
 
   const spokeCount = model.relationEdges.filter((e) => e.kind === "spoke").length;
   const peerCount = model.relationEdges.filter((e) => e.kind === "peer").length;
+  const showGeoGhosts = morph > 0.08 && morph < 0.98;
 
   return (
     <div className="relative w-full overflow-hidden rounded-2xl border border-white/10 bg-slate-950/80">
+      <div className="flex flex-wrap items-center gap-3 border-b border-white/10 px-4 py-2.5 text-xs text-white/80">
+        <label
+          htmlFor={`morph-${reactId}`}
+          className="shrink-0 font-medium text-white/70"
+        >
+          配置モーフ
+        </label>
+        <input
+          id={`morph-${reactId}`}
+          type="range"
+          min={0}
+          max={1}
+          step={0.01}
+          value={morph}
+          onChange={(e) => setMorph(Number(e.target.value))}
+          className="h-1.5 w-44 max-w-full flex-1 accent-sky-400"
+        />
+        <div className="flex items-center gap-2 text-[11px] text-white/55">
+          <span className={morph < 0.15 ? "text-sky-300" : undefined}>
+            地理 AEQD
+          </span>
+          <span>→</span>
+          <span className={morph > 0.85 ? "text-pink-300" : undefined}>
+            概念距離
+          </span>
+          <span className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-white/70">
+            {morph.toFixed(2)}
+          </span>
+        </div>
+        <div className="ml-auto flex gap-1">
+          <button
+            type="button"
+            className="rounded bg-white/10 px-2 py-1 text-[11px] hover:bg-white/20"
+            onClick={() => setMorph(0)}
+          >
+            地理
+          </button>
+          <button
+            type="button"
+            className="rounded bg-white/10 px-2 py-1 text-[11px] hover:bg-white/20"
+            onClick={() => setMorph(0.5)}
+          >
+            中間
+          </button>
+          <button
+            type="button"
+            className="rounded bg-white/10 px-2 py-1 text-[11px] hover:bg-white/20"
+            onClick={() => setMorph(1)}
+          >
+            概念
+          </button>
+        </div>
+      </div>
+
       <svg
         viewBox={`0 0 ${size} ${size}`}
         className="mx-auto h-auto w-full max-w-3xl"
         role="img"
-        aria-label={`${model.origin.label} からの概念距離同心円地図`}
+        aria-label={`${model.origin.label} 中心の正距方位図法と概念距離マップ`}
       >
         <defs>
-          <radialGradient id="lab-ring-fill" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#0ea5e9" stopOpacity="0.18" />
-            <stop offset="100%" stopColor="#020617" stopOpacity="0.05" />
+          <radialGradient id={gradId} cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#0ea5e9" stopOpacity="0.12" />
+            <stop offset="100%" stopColor="#020617" stopOpacity="0.04" />
           </radialGradient>
+          <clipPath id={`clip-${reactId}`}>
+            <circle cx={layout.center} cy={layout.center} r={layout.maxRadius} />
+          </clipPath>
         </defs>
 
         <circle
-          cx={center}
-          cy={center}
-          r={maxRadius}
-          fill="url(#lab-ring-fill)"
+          cx={layout.center}
+          cy={layout.center}
+          r={layout.maxRadius}
+          fill={`url(#${gradId})`}
         />
+
+        {/* A: 正距方位の陸地背景 */}
+        <g clipPath={`url(#clip-${reactId})`} opacity={0.9}>
+          {background.graticulePath && (
+            <path
+              d={background.graticulePath}
+              fill="none"
+              stroke="rgba(148,163,184,0.12)"
+              strokeWidth={0.6}
+            />
+          )}
+          {background.landPath && (
+            <path
+              d={background.landPath}
+              fill="rgba(148,163,184,0.22)"
+              stroke="rgba(226,232,240,0.28)"
+              strokeWidth={0.7}
+            />
+          )}
+          {background.outlinePath && (
+            <path
+              d={background.outlinePath}
+              fill="none"
+              stroke="rgba(148,163,184,0.35)"
+              strokeWidth={1}
+            />
+          )}
+        </g>
 
         {Array.from({ length: RING_COUNT }, (_, i) => {
           const t = (i + 1) / RING_COUNT;
-          const r = minRadius + t * (maxRadius - minRadius);
+          const r =
+            layout.minRadius + t * (layout.maxRadius - layout.minRadius);
+          const geoKm = Math.round(layout.maxGeoKm * t);
           return (
             <g key={i}>
               <circle
-                cx={center}
-                cy={center}
+                cx={layout.center}
+                cy={layout.center}
                 r={r}
                 fill="none"
-                stroke="rgba(148,163,184,0.28)"
+                stroke="rgba(148,163,184,0.22)"
                 strokeWidth={1}
                 strokeDasharray={i === RING_COUNT - 1 ? undefined : "4 6"}
               />
               <text
-                x={center + 6}
-                y={center - r + 4}
-                fill="rgba(148,163,184,0.7)"
-                fontSize={11}
+                x={layout.center + 6}
+                y={layout.center - r + 4}
+                fill="rgba(148,163,184,0.65)"
+                fontSize={10}
               >
-                d={t.toFixed(2)}
+                {morph < 0.5 ? `${geoKm}km` : `d=${t.toFixed(2)}`}
               </text>
             </g>
           );
@@ -165,20 +300,20 @@ export const LabConcentricMap = ({
 
         {[0, 90, 180, 270].map((deg) => {
           const rad = ((deg - 90) * Math.PI) / 180;
-          const x2 = center + maxRadius * Math.cos(rad);
-          const y2 = center + maxRadius * Math.sin(rad);
+          const x2 = layout.center + layout.maxRadius * Math.cos(rad);
+          const y2 = layout.center + layout.maxRadius * Math.sin(rad);
           const label =
             deg === 0 ? "N" : deg === 90 ? "E" : deg === 180 ? "S" : "W";
-          const lx = center + (maxRadius + 18) * Math.cos(rad);
-          const ly = center + (maxRadius + 18) * Math.sin(rad);
+          const lx = layout.center + (layout.maxRadius + 18) * Math.cos(rad);
+          const ly = layout.center + (layout.maxRadius + 18) * Math.sin(rad);
           return (
             <g key={deg}>
               <line
-                x1={center}
-                y1={center}
+                x1={layout.center}
+                y1={layout.center}
                 x2={x2}
                 y2={y2}
-                stroke="rgba(148,163,184,0.15)"
+                stroke="rgba(148,163,184,0.12)"
                 strokeWidth={1}
               />
               <text
@@ -195,7 +330,6 @@ export const LabConcentricMap = ({
           );
         })}
 
-        {/* 関係エッジ: 地点の下に薄い曲線 */}
         <g aria-hidden="true">
           {edgePaths.map((edge) => (
             <path
@@ -204,11 +338,33 @@ export const LabConcentricMap = ({
               fill="none"
               stroke={edge.stroke}
               strokeWidth={edge.strokeWidth}
-              strokeOpacity={edge.opacity}
+              strokeOpacity={edge.opacity * (0.65 + morph * 0.35)}
               strokeLinecap="round"
             />
           ))}
         </g>
+
+        {/* C: 地理位置のゴースト（モーフ中のみ） */}
+        {showGeoGhosts &&
+          plottedNeighbors.map((neighbor) => (
+            <g key={`ghost-${neighbor.id}`} opacity={0.35}>
+              <line
+                x1={neighbor.geoX}
+                y1={neighbor.geoY}
+                x2={neighbor.x}
+                y2={neighbor.y}
+                stroke="rgba(251,191,36,0.45)"
+                strokeWidth={0.8}
+                strokeDasharray="2 3"
+              />
+              <circle
+                cx={neighbor.geoX}
+                cy={neighbor.geoY}
+                r={2.2}
+                fill="rgba(251,191,36,0.7)"
+              />
+            </g>
+          ))}
 
         {plottedNeighbors.map((neighbor) => (
           <a key={neighbor.id} href={neighbor.href}>
@@ -232,16 +388,16 @@ export const LabConcentricMap = ({
         ))}
 
         <circle
-          cx={center}
-          cy={center}
+          cx={layout.center}
+          cy={layout.center}
           r={10}
           fill="#f472b6"
           stroke="white"
           strokeWidth={2}
         />
         <text
-          x={center}
-          y={center + 28}
+          x={layout.center}
+          y={layout.center + 28}
           textAnchor="middle"
           fill="#fda4af"
           fontSize={13}
@@ -253,11 +409,15 @@ export const LabConcentricMap = ({
 
       <div className="space-y-1 border-t border-white/10 px-4 py-2 text-[11px] leading-relaxed text-white/55">
         <p>
-          角度は地理的な方位、半径は選択モードの概念距離です。薄い線は関係エッジで、
-          <span className="text-sky-300/90"> 水色</span>が原点からの接続（
-          {spokeCount}）、
-          <span className="text-pink-300/90"> 桃色</span>が近傍地点同士（
-          {peerCount}）です。線が太い／濃いほど関係が強いです。
+          背景は原点中心の<strong className="font-medium text-white/70">正距方位図法</strong>
+          （角度=方位、半径=大圏距離）。点の半径をスライダーで地理距離⇔概念距離に補間します。モーフ中は琥珀の点・破線が地理上の位置です。
+        </p>
+        <p>
+          薄い線は関係エッジ（
+          <span className="text-sky-300/90">水色=原点接続 {spokeCount}</span>
+          ／
+          <span className="text-pink-300/90">桃色=近傍同士 {peerCount}</span>
+          ）。
         </p>
       </div>
     </div>
