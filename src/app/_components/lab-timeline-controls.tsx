@@ -53,7 +53,7 @@ export const LabTimelineControls = ({
             </div>
             <div className="font-mono text-2xl font-semibold tabular-nums leading-none text-sky-200 sm:text-3xl">
               {Number.isFinite(displayYear)
-                ? displayYear.toFixed(playing || progress % 1 > 0.02 ? 1 : 0)
+                ? String(Math.round(displayYear))
                 : "—"}
             </div>
           </div>

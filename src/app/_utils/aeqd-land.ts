@@ -257,7 +257,7 @@ const warpPolarPoint = (
 };
 
 const decimateRing = (ring: PolarRing, maxPoints: number): PolarRing => {
-  if (ring.length <= maxPoints) return ring;
+  if (maxPoints <= 0 || ring.length <= maxPoints) return ring;
   const stride = Math.ceil(ring.length / maxPoints);
   const out: PolarRing = [];
   for (let i = 0; i < ring.length; i += stride) {
@@ -278,7 +278,8 @@ const decimateRing = (ring: PolarRing, maxPoints: number): PolarRing => {
 const sampleFeatureAsPolarRings = (
   layout: AeqdLayout,
   object: GeoPermissibleObjects,
-  maxPointsPerRing = 180,
+  /** 0 以下で間引きなし（全頂点を保持） */
+  maxPointsPerRing = 0,
 ): PolarRing[] => {
   const rings: PolarRing[] = [];
   let current: PolarRing = [];
@@ -298,7 +299,11 @@ const sampleFeatureAsPolarRings = (
     },
     lineEnd() {
       if (current.length >= 3) {
-        rings.push(decimateRing(current, maxPointsPerRing));
+        rings.push(
+          maxPointsPerRing > 0
+            ? decimateRing(current, maxPointsPerRing)
+            : current,
+        );
       }
       current = [];
     },
@@ -342,7 +347,7 @@ export const buildPolarLandCache = (
   const key = polarCacheKey(layout, originLat, originLng);
   const path = geoPath(layout.projection);
   const land = getLandFeature();
-  const landRings = sampleFeatureAsPolarRings(layout, land, 160);
+  const landRings = sampleFeatureAsPolarRings(layout, land, 0);
   const angularDeg = Math.min(
     179,
     (layout.maxGeoKm / EARTH_RADIUS_KM) * (180 / Math.PI),

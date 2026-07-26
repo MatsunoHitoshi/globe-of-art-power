@@ -254,9 +254,7 @@ export const LabConcentricMap = ({
   const showGeoGhosts = morph > 0.08 && morph < 0.98;
   const yearText =
     yearLabel !== undefined
-      ? yearLabel % 1 < 0.05 || yearLabel % 1 > 0.95
-        ? String(Math.round(yearLabel))
-        : yearLabel.toFixed(1)
+      ? String(Math.round(yearLabel))
       : String(year);
 
   return (
