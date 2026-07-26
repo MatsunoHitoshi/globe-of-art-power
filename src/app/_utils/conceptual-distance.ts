@@ -24,6 +24,8 @@ export type ConceptualNeighbor = {
   /** 地理距離（km, 参考表示用） */
   geoDistanceKm: number;
   similarity: number;
+  /** 時系列補間での出現/消滅フェード（省略時 1） */
+  opacity?: number;
 };
 
 export type RelationEdge = {

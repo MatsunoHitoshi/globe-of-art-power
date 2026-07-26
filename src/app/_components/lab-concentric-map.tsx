@@ -15,10 +15,17 @@ import type { TopicId } from "@/app/const/topic-defs";
 
 type Props = {
   model: ConcentricMapModel;
+  /** 陸地ワープ用（時系列補間中は離散年モデルを渡す） */
+  warpModel?: ConcentricMapModel;
   year: number;
+  /** マップ上の年表示（補間中は小数可） */
+  yearLabel?: number;
   mode: LabMode;
   topic?: TopicId;
   size?: number;
+  showEdges?: boolean;
+  /** ラベルを付ける近傍の上限（モバイル向け） */
+  labelLimit?: number;
 };
 
 const RING_COUNT = 4;
@@ -32,27 +39,34 @@ type PlottedPoint = {
   label: string;
   kind: string;
   href?: string;
+  opacity: number;
+  showLabel: boolean;
 };
 
 export const LabConcentricMap = ({
   model,
+  warpModel,
   year,
+  yearLabel,
   mode,
   topic,
   size = 720,
+  showEdges = true,
+  labelLimit = 14,
 }: Props) => {
   const reactId = useId();
   const gradId = `lab-ring-fill-${reactId}`;
   const [morph, setMorph] = useState(1);
+  const landSource = warpModel ?? model;
 
   const maxGeoKm = useMemo(() => {
     const fromNeighbors = Math.max(
       ...model.neighbors.map((n) => n.geoDistanceKm),
+      ...landSource.neighbors.map((n) => n.geoDistanceKm),
       0,
     );
-    // 近傍が極端に近い場合でも地球スケールが見えるよう下限を設ける
     return Math.max(fromNeighbors, 2500);
-  }, [model.neighbors]);
+  }, [model.neighbors, landSource.neighbors]);
 
   const layout = useMemo(() => {
     const maxRadius = size * 0.42;
@@ -68,8 +82,8 @@ export const LabConcentricMap = ({
   }, [model.origin.lat, model.origin.lng, size, maxGeoKm]);
 
   const warpAnchors = useMemo(
-    () => anchorsFromNeighbors(model.neighbors, layout),
-    [model.neighbors, layout],
+    () => anchorsFromNeighbors(landSource.neighbors, layout),
+    [landSource.neighbors, layout],
   );
 
   const background = useMemo(
@@ -85,6 +99,11 @@ export const LabConcentricMap = ({
   );
 
   const plottedNeighbors = useMemo(() => {
+    const sorted = [...model.neighbors].sort(
+      (a, b) => a.conceptualDistance - b.conceptualDistance,
+    );
+    const labeled = new Set(sorted.slice(0, labelLimit).map((n) => n.place.id));
+
     return model.neighbors.map((neighbor) => {
       const rMorph = morphRadius(
         neighbor.geoDistanceKm,
@@ -109,9 +128,11 @@ export const LabConcentricMap = ({
         label: neighbor.place.label,
         kind: neighbor.place.kind,
         href: placeHref(neighbor.place.id, { year, mode, topic }),
+        opacity: neighbor.opacity ?? 1,
+        showLabel: labeled.has(neighbor.place.id),
       } satisfies PlottedPoint;
     });
-  }, [model.neighbors, layout, morph, year, mode, topic]);
+  }, [model.neighbors, layout, morph, year, mode, topic, labelLimit]);
 
   const pointById = useMemo(() => {
     const map = new Map<string, PlottedPoint>();
@@ -123,6 +144,8 @@ export const LabConcentricMap = ({
       geoY: layout.center,
       label: model.origin.label,
       kind: model.origin.kind,
+      opacity: 1,
+      showLabel: true,
     });
     for (const point of plottedNeighbors) {
       map.set(point.id, point);
@@ -131,6 +154,7 @@ export const LabConcentricMap = ({
   }, [model.origin, plottedNeighbors, layout.center]);
 
   const edgePaths = useMemo(() => {
+    if (!showEdges) return [];
     return model.relationEdges
       .map((edge) => {
         const from = pointById.get(edge.fromId);
@@ -169,20 +193,26 @@ export const LabConcentricMap = ({
         };
       })
       .filter((edge): edge is NonNullable<typeof edge> => edge !== null);
-  }, [model.relationEdges, pointById]);
+  }, [model.relationEdges, pointById, showEdges]);
 
   const spokeCount = model.relationEdges.filter((e) => e.kind === "spoke").length;
   const peerCount = model.relationEdges.filter((e) => e.kind === "peer").length;
   const showGeoGhosts = morph > 0.08 && morph < 0.98;
+  const yearText =
+    yearLabel !== undefined
+      ? yearLabel % 1 < 0.05 || yearLabel % 1 > 0.95
+        ? String(Math.round(yearLabel))
+        : yearLabel.toFixed(1)
+      : String(year);
 
   return (
     <div className="relative w-full overflow-hidden rounded-2xl border border-white/10 bg-slate-950/80">
-      <div className="flex flex-wrap items-center gap-3 border-b border-white/10 px-4 py-2.5 text-xs text-white/80">
+      <div className="flex flex-wrap items-center gap-2 border-b border-white/10 px-3 py-2 text-xs text-white/80 sm:gap-3 sm:px-4 sm:py-2.5">
         <label
           htmlFor={`morph-${reactId}`}
           className="shrink-0 font-medium text-white/70"
         >
-          配置モーフ
+          配置
         </label>
         <input
           id={`morph-${reactId}`}
@@ -192,42 +222,34 @@ export const LabConcentricMap = ({
           step={0.01}
           value={morph}
           onChange={(e) => setMorph(Number(e.target.value))}
-          className="h-1.5 w-44 max-w-full flex-1 accent-sky-400"
+          className="h-8 min-w-0 flex-1 accent-sky-400 sm:h-1.5"
         />
-        <div className="flex items-center gap-2 text-[11px] text-white/55">
-          <span className={morph < 0.15 ? "text-sky-300" : undefined}>
-            地理
-          </span>
-          <span>→</span>
-          <span className={morph > 0.85 ? "text-pink-300" : undefined}>
-            概念（陸地ワープ）
-          </span>
-          <span className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-white/70">
-            {morph.toFixed(2)}
-          </span>
-        </div>
-        <div className="ml-auto flex gap-1">
-          <button
-            type="button"
-            className="rounded bg-white/10 px-2 py-1 text-[11px] hover:bg-white/20"
-            onClick={() => setMorph(0)}
-          >
-            地理
-          </button>
-          <button
-            type="button"
-            className="rounded bg-white/10 px-2 py-1 text-[11px] hover:bg-white/20"
-            onClick={() => setMorph(0.5)}
-          >
-            中間
-          </button>
-          <button
-            type="button"
-            className="rounded bg-white/10 px-2 py-1 text-[11px] hover:bg-white/20"
-            onClick={() => setMorph(1)}
-          >
-            概念
-          </button>
+        <div className="flex w-full items-center justify-between gap-2 sm:ml-auto sm:w-auto sm:justify-end">
+          <div className="flex items-center gap-1.5 text-[11px] text-white/55">
+            <span className={morph < 0.15 ? "text-sky-300" : undefined}>
+              地理
+            </span>
+            <span>→</span>
+            <span className={morph > 0.85 ? "text-pink-300" : undefined}>
+              概念
+            </span>
+          </div>
+          <div className="flex gap-1">
+            <button
+              type="button"
+              className="min-h-9 rounded-lg bg-white/10 px-2.5 text-[11px] hover:bg-white/20"
+              onClick={() => setMorph(0)}
+            >
+              地理
+            </button>
+            <button
+              type="button"
+              className="min-h-9 rounded-lg bg-white/10 px-2.5 text-[11px] hover:bg-white/20"
+              onClick={() => setMorph(1)}
+            >
+              概念
+            </button>
+          </div>
         </div>
       </div>
 
@@ -235,7 +257,7 @@ export const LabConcentricMap = ({
         viewBox={`0 0 ${size} ${size}`}
         className="mx-auto h-auto w-full max-w-3xl"
         role="img"
-        aria-label={`${model.origin.label} 中心の概念距離マップ（陸地ワープ付き）`}
+        aria-label={`${model.origin.label} ${yearText} 年の概念距離マップ`}
       >
         <defs>
           <radialGradient id={gradId} cx="50%" cy="50%" r="50%">
@@ -254,7 +276,18 @@ export const LabConcentricMap = ({
           fill={`url(#${gradId})`}
         />
 
-        {/* B: 概念距離に合わせて半径方向にワープした陸地 */}
+        <text
+          x={layout.center}
+          y={layout.center - layout.maxRadius * 0.72}
+          textAnchor="middle"
+          fill="rgba(125,211,252,0.18)"
+          fontSize={size * 0.14}
+          fontWeight={700}
+          className="pointer-events-none select-none"
+        >
+          {yearText}
+        </text>
+
         <g clipPath={`url(#clip-${reactId})`} opacity={0.9}>
           {showGeoGhosts && background.landPathGeo && (
             <path
@@ -365,10 +398,12 @@ export const LabConcentricMap = ({
           ))}
         </g>
 
-        {/* C: 地理位置のゴースト（モーフ中のみ） */}
         {showGeoGhosts &&
           plottedNeighbors.map((neighbor) => (
-            <g key={`ghost-${neighbor.id}`} opacity={0.35}>
+            <g
+              key={`ghost-${neighbor.id}`}
+              opacity={0.35 * neighbor.opacity}
+            >
               <line
                 x1={neighbor.geoX}
                 y1={neighbor.geoY}
@@ -388,7 +423,11 @@ export const LabConcentricMap = ({
           ))}
 
         {plottedNeighbors.map((neighbor) => (
-          <a key={neighbor.id} href={neighbor.href}>
+          <a
+            key={neighbor.id}
+            href={neighbor.href}
+            style={{ opacity: neighbor.opacity }}
+          >
             <circle
               cx={neighbor.x}
               cy={neighbor.y}
@@ -397,14 +436,16 @@ export const LabConcentricMap = ({
               stroke="rgba(15,23,42,0.9)"
               strokeWidth={1.5}
             />
-            <text
-              x={neighbor.x + 9}
-              y={neighbor.y + 3}
-              fill="rgba(226,232,240,0.92)"
-              fontSize={11}
-            >
-              {neighbor.label}
-            </text>
+            {neighbor.showLabel && (
+              <text
+                x={neighbor.x + 9}
+                y={neighbor.y + 3}
+                fill="rgba(226,232,240,0.92)"
+                fontSize={11}
+              >
+                {neighbor.label}
+              </text>
+            )}
           </a>
         ))}
 
@@ -428,19 +469,19 @@ export const LabConcentricMap = ({
         </text>
       </svg>
 
-      <div className="space-y-1 border-t border-white/10 px-4 py-2 text-[11px] leading-relaxed text-white/55">
+      <div className="space-y-1 border-t border-white/10 px-3 py-2 text-[11px] leading-relaxed text-white/55 sm:px-4">
         <p>
-          方位角 θ は地理のまま、半径を地点アンカーの地理→概念写像で補間し、
-          <strong className="font-medium text-white/70">陸地輪郭も同じ写像でワープ</strong>
-          します（B案）。スライダー 0=正距方位、1=概念距離レイアウト。モーフ中の琥珀破線は地理上の陸地・点です。
+          方位は地理のまま、半径と陸地を概念距離でワープ。下のタイムラインで年ごとの距離の変遷を再生できます。
         </p>
-        <p>
-          薄い線は関係エッジ（
-          <span className="text-sky-300/90">水色=原点接続 {spokeCount}</span>
-          ／
-          <span className="text-pink-300/90">桃色=近傍同士 {peerCount}</span>
-          ）。
-        </p>
+        {showEdges && (
+          <p>
+            薄い線は関係エッジ（
+            <span className="text-sky-300/90">水色=原点接続 {spokeCount}</span>
+            ／
+            <span className="text-pink-300/90">桃色=近傍同士 {peerCount}</span>
+            ）。
+          </p>
+        )}
       </div>
     </div>
   );
