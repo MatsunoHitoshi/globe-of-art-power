@@ -276,7 +276,6 @@ export const LabPlacePageContent = ({
               mode={mode}
               topic={mode === "topic" ? topic : undefined}
               showEdges
-              lightBackground={resolved.transitioning || playing}
               stableMaxGeoKm={stableMaxGeoKm}
               labelLimit={12}
               plotLimit={48}

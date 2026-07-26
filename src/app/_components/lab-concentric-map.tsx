@@ -5,10 +5,13 @@ import type { ConcentricMapModel } from "@/app/_utils/conceptual-distance";
 import { placeHref } from "@/app/_utils/conceptual-distance";
 import {
   anchorsFromNeighbors,
-  buildAeqdBackgroundPaths,
+  buildPolarLandCache,
+  buildWarpedBackgroundFromPolarCache,
   createAeqdLayout,
   morphRadius,
+  polarCacheKey,
   polarToXy,
+  type PolarLandCache,
 } from "@/app/_utils/aeqd-land";
 import type { LabMode } from "@/app/_utils/lab-modes";
 import type { TopicId } from "@/app/const/topic-defs";
@@ -26,7 +29,7 @@ type Props = {
   showEdges?: boolean;
   /** ラベルを付ける近傍の上限（モバイル向け） */
   labelLimit?: number;
-  /** 時系列スクラブ/再生中は陸地を地理のままにしてメインスレッド負荷を抑える */
+  /** @deprecated 極座標キャッシュ導入後は常に陸地も追従。互換のため残す */
   lightBackground?: boolean;
   /** タイムライン全体で固定した地理スケール（スクラブ中の再投影を防ぐ） */
   stableMaxGeoKm?: number;
@@ -59,67 +62,69 @@ export const LabConcentricMap = ({
   size = 720,
   showEdges = true,
   labelLimit = 14,
-  lightBackground = false,
+  lightBackground: _lightBackground = false,
   stableMaxGeoKm,
   plotLimit = 48,
 }: Props) => {
   const reactId = useId();
   const gradId = `lab-ring-fill-${reactId}`;
   const [morph, setMorph] = useState(1);
-  const landSource = warpModel ?? model;
+  // 点・陸地とも補間中の model を優先（離散年はエッジ補完用）
+  const landSource = model;
 
   const maxGeoKm = useMemo(() => {
-    // 補間中の model.neighbors を混ぜると maxGeoKm が毎フレーム変わり、
-    // 投影ごと陸地パスを再生成してクライアントが落ちることがある
-    const fromLand = Math.max(
-      0,
-      ...landSource.neighbors.map((n) => n.geoDistanceKm),
-    );
-    return Math.max(stableMaxGeoKm ?? 0, fromLand, 2500);
-  }, [landSource.neighbors, stableMaxGeoKm]);
+    // 補間フレームの近傍集合でスケールを変えると極座標キャッシュが毎フレーム無効化される
+    return Math.max(stableMaxGeoKm ?? 0, 2500);
+  }, [stableMaxGeoKm]);
 
   const layout = useMemo(() => {
     const maxRadius = size * 0.42;
     const minRadius = size * 0.06;
     return createAeqdLayout({
-      originLat: landSource.origin.lat,
-      originLng: landSource.origin.lng,
+      originLat: model.origin.lat,
+      originLng: model.origin.lng,
       size,
       maxRadius,
       minRadius,
       maxGeoKm,
     });
-  }, [
-    landSource.origin.lat,
-    landSource.origin.lng,
-    size,
-    maxGeoKm,
-  ]);
+  }, [model.origin.lat, model.origin.lng, size, maxGeoKm]);
+
+  // 地理投影は origin/スケールが変わったときだけ。毎フレームは半径付け替えのみ
+  const polarCache = useMemo((): PolarLandCache => {
+    return buildPolarLandCache(
+      layout,
+      model.origin.lat,
+      model.origin.lng,
+    );
+  }, [layout, model.origin.lat, model.origin.lng]);
 
   const warpAnchors = useMemo(
-    () => anchorsFromNeighbors(landSource.neighbors, layout, 24),
+    () => anchorsFromNeighbors(landSource.neighbors, layout, 20),
     [landSource.neighbors, layout],
   );
 
-  const backgroundMorph = lightBackground ? 0 : morph;
-
-  const background = useMemo(
-    () =>
-      buildAeqdBackgroundPaths(
-        layout,
-        landSource.origin.lat,
-        landSource.origin.lng,
-        warpAnchors,
-        backgroundMorph,
-      ),
-    [
+  const background = useMemo(() => {
+    // key がずれた場合の安全策
+    const key = polarCacheKey(layout, model.origin.lat, model.origin.lng);
+    const cache =
+      polarCache.key === key
+        ? polarCache
+        : buildPolarLandCache(layout, model.origin.lat, model.origin.lng);
+    return buildWarpedBackgroundFromPolarCache(
+      cache,
       layout,
-      landSource.origin.lat,
-      landSource.origin.lng,
       warpAnchors,
-      backgroundMorph,
-    ],
-  );
+      morph,
+    );
+  }, [
+    polarCache,
+    layout,
+    model.origin.lat,
+    model.origin.lng,
+    warpAnchors,
+    morph,
+  ]);
 
   const plottedNeighbors = useMemo(() => {
     const sorted = [...model.neighbors]
@@ -533,7 +538,7 @@ export const LabConcentricMap = ({
 
       <div className="space-y-1 border-t border-white/10 px-3 py-2 text-[11px] leading-relaxed text-white/55 sm:px-4">
         <p>
-          方位は地理のまま、半径と陸地を概念距離でワープ。下のタイムラインで年ごとの距離の変遷を再生できます。
+          方位は地理のまま、半径と陸地を概念距離でワープします。陸地は地理投影をキャッシュし、時系列アニメでは点と同じアンカーで半径だけ追従します。
         </p>
         {showEdges && (
           <p>
