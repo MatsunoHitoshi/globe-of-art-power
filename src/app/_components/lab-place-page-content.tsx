@@ -68,7 +68,7 @@ export const LabPlacePageContent = ({
     syncedInitial.current = false;
   }, [placeId]);
 
-  // 初回ロード後に initialYear へスナップ。フレーム集合が変わったら範囲内に収める
+  // 初回は initialYear が揃ってからスナップ。以降はフレーム数変化に合わせて範囲内へ
   useEffect(() => {
     if (frames.length === 0) return;
     if (!syncedInitial.current) {
@@ -77,17 +77,34 @@ export const LabPlacePageContent = ({
         Math.max(LAB_YEAR_START, initialYear),
       );
       const idx = frames.findIndex((f) => f.year === target);
-      setProgress(idx >= 0 ? idx : frames.length - 1);
-      syncedInitial.current = true;
+      if (idx >= 0) {
+        setProgress(idx);
+        syncedInitial.current = true;
+      } else if (!loading) {
+        setProgress(frames.length - 1);
+        syncedInitial.current = true;
+      }
       return;
     }
     setProgress((prev) => Math.min(prev, frames.length - 1));
-  }, [frames, initialYear]);
+  }, [frames, initialYear, loading]);
 
   const resolved = useMemo(
     () => resolveTimelineFrame(frames, progress),
     [frames, progress],
   );
+
+  const stableMaxGeoKm = useMemo(() => {
+    let maxKm = 2500;
+    for (const frame of frames) {
+      for (const n of frame.model.neighbors) {
+        if (Number.isFinite(n.geoDistanceKm) && n.geoDistanceKm > maxKm) {
+          maxKm = n.geoDistanceKm;
+        }
+      }
+    }
+    return maxKm;
+  }, [frames]);
 
   const year = resolved?.discreteYear ?? initialYear;
   const bundle = bundles.get(year) ?? null;
@@ -133,12 +150,13 @@ export const LabPlacePageContent = ({
       mode,
     });
     if (mode === "topic") params.set("topic", topic);
-    window.history.replaceState(
-      null,
-      "",
-      `/lab/place/${encodeURIComponent(placeId)}?${params.toString()}`,
-    );
-  }, [resolved, mode, topic, placeId]);
+    const href = `/lab/place/${encodeURIComponent(placeId)}?${params.toString()}`;
+    // スクラブ中の replaceState 連打を避ける
+    const handle = window.setTimeout(() => {
+      window.history.replaceState(null, "", href);
+    }, resolved.transitioning || playing ? 120 : 0);
+    return () => window.clearTimeout(handle);
+  }, [resolved, mode, topic, placeId, playing]);
 
   const nodes = useMemo(
     () => (bundle ? buildPlaceNodes(bundle) : []),
@@ -258,7 +276,10 @@ export const LabPlacePageContent = ({
               mode={mode}
               topic={mode === "topic" ? topic : undefined}
               showEdges={!resolved.transitioning && !playing}
+              lightBackground={resolved.transitioning || playing}
+              stableMaxGeoKm={stableMaxGeoKm}
               labelLimit={12}
+              plotLimit={48}
             />
           )}
         </section>

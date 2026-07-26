@@ -34,6 +34,17 @@ export const resolveTimelineFrame = (
   transitioning: boolean;
 } | null => {
   if (frames.length === 0) return null;
+  if (!Number.isFinite(progress)) {
+    const only = frames[0]!;
+    return {
+      displayYear: only.year,
+      discreteYear: only.year,
+      frac: 0,
+      model: only.model,
+      warpModel: only.model,
+      transitioning: false,
+    };
+  }
   if (frames.length === 1) {
     const only = frames[0]!;
     return {

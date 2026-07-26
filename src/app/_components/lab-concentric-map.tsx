@@ -26,6 +26,12 @@ type Props = {
   showEdges?: boolean;
   /** ラベルを付ける近傍の上限（モバイル向け） */
   labelLimit?: number;
+  /** 時系列スクラブ/再生中は陸地を地理のままにしてメインスレッド負荷を抑える */
+  lightBackground?: boolean;
+  /** タイムライン全体で固定した地理スケール（スクラブ中の再投影を防ぐ） */
+  stableMaxGeoKm?: number;
+  /** 描画する近傍の上限 */
+  plotLimit?: number;
 };
 
 const RING_COUNT = 4;
@@ -53,6 +59,9 @@ export const LabConcentricMap = ({
   size = 720,
   showEdges = true,
   labelLimit = 14,
+  lightBackground = false,
+  stableMaxGeoKm,
+  plotLimit = 48,
 }: Props) => {
   const reactId = useId();
   const gradId = `lab-ring-fill-${reactId}`;
@@ -60,51 +69,73 @@ export const LabConcentricMap = ({
   const landSource = warpModel ?? model;
 
   const maxGeoKm = useMemo(() => {
-    const fromNeighbors = Math.max(
-      ...model.neighbors.map((n) => n.geoDistanceKm),
-      ...landSource.neighbors.map((n) => n.geoDistanceKm),
+    // 補間中の model.neighbors を混ぜると maxGeoKm が毎フレーム変わり、
+    // 投影ごと陸地パスを再生成してクライアントが落ちることがある
+    const fromLand = Math.max(
       0,
+      ...landSource.neighbors.map((n) => n.geoDistanceKm),
     );
-    return Math.max(fromNeighbors, 2500);
-  }, [model.neighbors, landSource.neighbors]);
+    return Math.max(stableMaxGeoKm ?? 0, fromLand, 2500);
+  }, [landSource.neighbors, stableMaxGeoKm]);
 
   const layout = useMemo(() => {
     const maxRadius = size * 0.42;
     const minRadius = size * 0.06;
     return createAeqdLayout({
-      originLat: model.origin.lat,
-      originLng: model.origin.lng,
+      originLat: landSource.origin.lat,
+      originLng: landSource.origin.lng,
       size,
       maxRadius,
       minRadius,
       maxGeoKm,
     });
-  }, [model.origin.lat, model.origin.lng, size, maxGeoKm]);
+  }, [
+    landSource.origin.lat,
+    landSource.origin.lng,
+    size,
+    maxGeoKm,
+  ]);
 
   const warpAnchors = useMemo(
-    () => anchorsFromNeighbors(landSource.neighbors, layout),
+    () => anchorsFromNeighbors(landSource.neighbors, layout, 24),
     [landSource.neighbors, layout],
   );
+
+  const backgroundMorph = lightBackground ? 0 : morph;
 
   const background = useMemo(
     () =>
       buildAeqdBackgroundPaths(
         layout,
-        model.origin.lat,
-        model.origin.lng,
+        landSource.origin.lat,
+        landSource.origin.lng,
         warpAnchors,
-        morph,
+        backgroundMorph,
       ),
-    [layout, model.origin.lat, model.origin.lng, warpAnchors, morph],
+    [
+      layout,
+      landSource.origin.lat,
+      landSource.origin.lng,
+      warpAnchors,
+      backgroundMorph,
+    ],
   );
 
   const plottedNeighbors = useMemo(() => {
-    const sorted = [...model.neighbors].sort(
-      (a, b) => a.conceptualDistance - b.conceptualDistance,
+    const sorted = [...model.neighbors]
+      .filter(
+        (n) =>
+          Number.isFinite(n.conceptualDistance) &&
+          Number.isFinite(n.bearing) &&
+          Number.isFinite(n.geoDistanceKm),
+      )
+      .sort((a, b) => a.conceptualDistance - b.conceptualDistance);
+    const visible = sorted.slice(0, plotLimit);
+    const labeled = new Set(
+      visible.slice(0, labelLimit).map((n) => n.place.id),
     );
-    const labeled = new Set(sorted.slice(0, labelLimit).map((n) => n.place.id));
 
-    return model.neighbors.map((neighbor) => {
+    return visible.map((neighbor) => {
       const rMorph = morphRadius(
         neighbor.geoDistanceKm,
         neighbor.conceptualDistance,
@@ -132,7 +163,16 @@ export const LabConcentricMap = ({
         showLabel: labeled.has(neighbor.place.id),
       } satisfies PlottedPoint;
     });
-  }, [model.neighbors, layout, morph, year, mode, topic, labelLimit]);
+  }, [
+    model.neighbors,
+    layout,
+    morph,
+    year,
+    mode,
+    topic,
+    labelLimit,
+    plotLimit,
+  ]);
 
   const pointById = useMemo(() => {
     const map = new Map<string, PlottedPoint>();
@@ -399,7 +439,15 @@ export const LabConcentricMap = ({
         </g>
 
         {showGeoGhosts &&
-          plottedNeighbors.map((neighbor) => (
+          plottedNeighbors
+            .filter(
+              (neighbor) =>
+                Number.isFinite(neighbor.x) &&
+                Number.isFinite(neighbor.y) &&
+                Number.isFinite(neighbor.geoX) &&
+                Number.isFinite(neighbor.geoY),
+            )
+            .map((neighbor) => (
             <g
               key={`ghost-${neighbor.id}`}
               opacity={0.35 * neighbor.opacity}
@@ -422,7 +470,12 @@ export const LabConcentricMap = ({
             </g>
           ))}
 
-        {plottedNeighbors.map((neighbor) => (
+        {plottedNeighbors
+          .filter(
+            (neighbor) =>
+              Number.isFinite(neighbor.x) && Number.isFinite(neighbor.y),
+          )
+          .map((neighbor) => (
           <a
             key={neighbor.id}
             href={neighbor.href}

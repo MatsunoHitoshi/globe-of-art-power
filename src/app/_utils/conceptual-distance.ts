@@ -395,6 +395,14 @@ export const buildConcentricMapModel = (
         similarity: normalizedSim,
       };
     })
+    // 都市と国籍が同一座標（例: Hong Kong / country-HK）の重複を除外
+    .filter((row) => row.geoDistanceKm >= 1)
+    .filter(
+      (row) =>
+        Number.isFinite(row.bearing) &&
+        Number.isFinite(row.geoDistanceKm) &&
+        Number.isFinite(row.conceptualDistance),
+    )
     .sort((a, b) => a.conceptualDistance - b.conceptualDistance);
 
   return {

@@ -101,6 +101,9 @@ const STOPWORDS = new Set(
 
 const normalizeCountryCode = (raw: string) => {
   if (raw === "United Arab Emirates" || raw === "AE") return "UAE";
+  // データ側の誤記・別名
+  if (raw === "ITL") return "IT";
+  if (raw === "INT" || raw === "International") return "INT";
   return raw;
 };
 
@@ -110,10 +113,14 @@ const resolveHome = (nationalityName: string | null | undefined) => {
   const raw = parts[parts.length - 1] ?? "";
   if (!raw) return null;
   const code = normalizeCountryCode(raw);
+  // 国際・不明コードは座標なし
+  if (code === "INT") return null;
   const loc = getCountryLocation(code);
-  // main 未マージ時でも RS/SN を拾えるようフォールバック
   if (!loc) {
-    const fallback: Record<string, { lat: number; lng: number; countryName: string; code: string }> = {
+    const fallback: Record<
+      string,
+      { lat: number; lng: number; countryName: string; code: string }
+    > = {
       RS: { code: "RS", lat: 44.0165, lng: 21.0059, countryName: "Serbia" },
       SN: { code: "SN", lat: 14.4974, lng: -14.4524, countryName: "Senegal" },
     };

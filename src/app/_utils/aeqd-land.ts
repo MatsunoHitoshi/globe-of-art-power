@@ -79,6 +79,7 @@ export const anchorsFromNeighbors = (
     conceptualDistance: number;
   }[],
   layout: Pick<AeqdLayout, "minRadius" | "maxRadius" | "maxGeoKm">,
+  limit = 24,
 ): RadialWarpAnchor[] => {
   return neighbors
     .map((n) => {
@@ -90,9 +91,17 @@ export const anchorsFromNeighbors = (
         conceptRadius:
           layout.minRadius +
           conceptT * (layout.maxRadius - layout.minRadius),
+        conceptualDistance: conceptT,
       };
     })
-    .filter((a) => a.geoRadius > 1);
+    .filter((a) => a.geoRadius > 1 && Number.isFinite(a.geoRadius))
+    .sort((a, b) => a.conceptualDistance - b.conceptualDistance)
+    .slice(0, limit)
+    .map(({ bearing, geoRadius, conceptRadius }) => ({
+      bearing,
+      geoRadius,
+      conceptRadius,
+    }));
 };
 
 const angularDistance = (a: number, b: number) => {
@@ -192,26 +201,54 @@ export const buildAeqdBackgroundPaths = (
   anchors: RadialWarpAnchor[] = [],
   morph = 0,
 ) => {
-  const t = Math.min(1, Math.max(0, morph));
-  const useWarp = t > 1e-6 && anchors.length > 0;
-  const projection = useWarp
-    ? makeWarpedProjection(layout, anchors, t)
-    : layout.projection;
-  const path = geoPath(projection);
-  const geoPathFn = geoPath(layout.projection);
+  const empty = {
+    landPath: "",
+    landPathGeo: "",
+    graticulePath: "",
+    outlinePath: "",
+  };
+  if (
+    ![originLat, originLng, layout.center, layout.maxRadius, layout.maxGeoKm].every(
+      Number.isFinite,
+    )
+  ) {
+    return empty;
+  }
 
-  const land = getLandFeature();
-  const landPath = path(land) ?? "";
-  const landPathGeo = useWarp ? (geoPathFn(land) ?? "") : landPath;
-  const graticulePath = path(geoGraticule10()) ?? "";
-  const angularDeg = Math.min(
-    179,
-    (layout.maxGeoKm / EARTH_RADIUS_KM) * (180 / Math.PI),
-  );
-  const outlineGeo = geoCircle().center([originLng, originLat]).radius(angularDeg)();
-  const outlinePath = path(outlineGeo) ?? "";
+  try {
+    const t = Math.min(1, Math.max(0, morph));
+    const useWarp = t > 1e-6 && anchors.length > 0;
+    const projection = useWarp
+      ? makeWarpedProjection(layout, anchors, t)
+      : layout.projection;
+    const path = geoPath(projection);
+    const geoPathFn = geoPath(layout.projection);
 
-  return { landPath, landPathGeo, graticulePath, outlinePath };
+    const land = getLandFeature();
+    const landPath = path(land) ?? "";
+    const landPathGeo = useWarp ? (geoPathFn(land) ?? "") : landPath;
+    const graticulePath = path(geoGraticule10()) ?? "";
+    const angularDeg = Math.min(
+      179,
+      (layout.maxGeoKm / EARTH_RADIUS_KM) * (180 / Math.PI),
+    );
+    const outlineGeo = geoCircle()
+      .center([originLng, originLat])
+      .radius(angularDeg)();
+    const outlinePath = path(outlineGeo) ?? "";
+
+    const sanitize = (d: string) =>
+      d.includes("NaN") || d.includes("Infinity") ? "" : d;
+
+    return {
+      landPath: sanitize(landPath),
+      landPathGeo: sanitize(landPathGeo),
+      graticulePath: sanitize(graticulePath),
+      outlinePath: sanitize(outlinePath),
+    };
+  } catch {
+    return empty;
+  }
 };
 
 /** 地理距離・概念距離を同じ円盤上の半径へ写し、morph で補間する */
