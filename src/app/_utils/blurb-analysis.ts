@@ -1,4 +1,4 @@
-import { getCountryLocation } from "../const/country-code";
+import { getCountryLocation, normalizeCountryCode } from "../const/country-code";
 import { PLACE_GAZETTEER, type PlaceEntry } from "../const/place-gazetteer";
 import { TOPIC_DEFS, type TopicId } from "../const/topic-defs";
 import type { PowerYearData } from "./globe-data-organizer";
@@ -99,34 +99,14 @@ const STOPWORDS = new Set(
   ),
 );
 
-const normalizeCountryCode = (raw: string) => {
-  if (raw === "United Arab Emirates" || raw === "AE") return "UAE";
-  // データ側の誤記・別名
-  if (raw === "ITL") return "IT";
-  if (raw === "INT" || raw === "International") return "INT";
-  return raw;
-};
-
 const resolveHome = (nationalityName: string | null | undefined) => {
   if (!nationalityName) return null;
   const parts = nationalityName.split("-");
   const raw = parts[parts.length - 1] ?? "";
   if (!raw) return null;
-  const code = normalizeCountryCode(raw);
   // 国際・不明コードは座標なし
-  if (code === "INT") return null;
-  const loc = getCountryLocation(code);
-  if (!loc) {
-    const fallback: Record<
-      string,
-      { lat: number; lng: number; countryName: string; code: string }
-    > = {
-      RS: { code: "RS", lat: 44.0165, lng: 21.0059, countryName: "Serbia" },
-      SN: { code: "SN", lat: 14.4974, lng: -14.4524, countryName: "Senegal" },
-    };
-    return fallback[code] ?? null;
-  }
-  return loc;
+  if (raw === "INT" || raw === "International") return null;
+  return getCountryLocation(normalizeCountryCode(raw));
 };
 
 const extractPlaces = (content: string): MentionedPlace[] => {

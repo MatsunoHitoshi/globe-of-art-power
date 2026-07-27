@@ -76,6 +76,13 @@ export const countyCodes = [
   { code: "SN", lat: 14.4974, lng: -14.4524, countryName: "Senegal" },
 ];
 
+/** データ側の表記ゆれをテーブルの code に揃える */
+const COUNTRY_CODE_ALIASES: Record<string, string> = {
+  "United Arab Emirates": "UAE",
+  AE: "UAE",
+  ITL: "IT",
+};
+
 const COUNTRY_AREA_KM2: Record<string, number> = {
   US: 9833520,
   DE: 357022,
@@ -144,13 +151,16 @@ const COUNTRY_AREA_KM2: Record<string, number> = {
   SN: 196722,
 };
 
+export const normalizeCountryCode = (code: string) => {
+  return COUNTRY_CODE_ALIASES[code] ?? code;
+};
+
 export const getCountryLocation = (code: string) => {
-  const res = countyCodes.find((data) => {
-    return data.code === code;
-  });
-  return res;
+  const normalized = normalizeCountryCode(code);
+  return countyCodes.find((data) => data.code === normalized);
 };
 
 export const getCountryAreaKm2 = (code: string) => {
-  return COUNTRY_AREA_KM2[code] ?? 1_000_000;
+  const normalized = normalizeCountryCode(code);
+  return COUNTRY_AREA_KM2[normalized] ?? 1_000_000;
 };
