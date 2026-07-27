@@ -18,6 +18,10 @@ import type {
 } from "../types/types";
 import { ArtistModal } from "./artist-modal";
 import { handler, powerData } from "../_utils/globe-data-organizer";
+import {
+  evaluationModeToMetricKey,
+  getEvaluationMetricValue,
+} from "../_utils/evaluation-metric";
 
 const Globe = dynamic(
   () => import("react-globe.gl").then((mod) => mod.default),
@@ -74,26 +78,20 @@ export const TopPageContent = () => {
   );
   const [evaluationMode, setEvaluationMode] = useState<EvaluationMode>("total");
   const [isMobileSettingsOpen, setIsMobileSettingsOpen] = useState(false);
-  const heatmapMetric: "pos" | "posAreaAdjusted" =
-    evaluationMode === "areaAdjusted" ? "posAreaAdjusted" : "pos";
+  const heatmapMetric = evaluationModeToMetricKey(evaluationMode);
   const animatedHeatmapData = useAnimatedHeatmapData(
     sizeData,
     heatmapMetric,
     HEATMAP_YEAR_TRANSITION_MS,
   );
+  // animatedHeatmapData は選択メトリクスをすでに `pos` に集約済み。
+  // ここで posPowerIndex 等を再参照すると weight=0 になりヒートが消える。
   const heatmapPointWeight = (point: unknown): number => {
-    if (typeof point !== "object" || point === null) {
+    if (typeof point !== "object" || point === null || !("pos" in point)) {
       return 0;
     }
-
-    const value =
-      evaluationMode === "areaAdjusted" && "posAreaAdjusted" in point
-        ? (point as { posAreaAdjusted?: unknown }).posAreaAdjusted
-        : "pos" in point
-          ? (point as { pos?: unknown }).pos
-          : 0;
-
-    return typeof value === "number" ? Math.sqrt(value) : 0;
+    const { pos } = point as { pos: unknown };
+    return typeof pos === "number" ? Math.sqrt(pos) : 0;
   };
 
   useEffect(() => {
@@ -211,14 +209,17 @@ export const TopPageContent = () => {
               value={evaluationMode}
               onChange={(e) => {
                 const value = e.target.value;
-                setEvaluationMode(
-                  value === "areaAdjusted" ? "areaAdjusted" : "total",
-                );
+                if (value === "areaAdjusted" || value === "powerIndex") {
+                  setEvaluationMode(value);
+                  return;
+                }
+                setEvaluationMode("total");
               }}
               className="rounded bg-white/10 px-2 py-1 text-xs outline-none"
             >
               <option value="total">Total Power</option>
               <option value="areaAdjusted">Area Adjusted</option>
+              <option value="powerIndex">Power Index (Prinz)</option>
             </select>
           </label>
 
@@ -353,9 +354,7 @@ export const TopPageContent = () => {
         objectRotation={{ x: 50, y: 50, z: 1 }}
         hexBinPointsData={visualizationMode === "hex" ? sizeData : []}
         hexBinPointWeight={(point) =>
-          evaluationMode === "areaAdjusted"
-            ? (point as { posAreaAdjusted?: number }).posAreaAdjusted ?? 0
-            : (point as { pos?: number }).pos ?? 0
+          getEvaluationMetricValue(point as DataType, evaluationMode)
         }
         hexAltitude={(d) =>
           visualizationMode === "hex" ? d.sumWeight * 6e-8 * barHeightScale : 0

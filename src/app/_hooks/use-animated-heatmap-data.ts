@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { DataType } from "../types/types";
 
-type HeatmapMetric = "pos" | "posAreaAdjusted";
+type HeatmapMetric = "pos" | "posAreaAdjusted" | "posPowerIndex";
 
 type HeatmapPoint = {
   key: string;
