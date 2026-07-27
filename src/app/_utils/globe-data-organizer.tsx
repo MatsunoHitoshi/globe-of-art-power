@@ -34,6 +34,8 @@ export type PowerYearData = {
     hits: Array<{
       title: string;
       path: string;
+      content?: string;
+      excerpt?: string;
       nationality?: { name: string } | null;
       artist_category?: { name: string } | null;
       acf: {

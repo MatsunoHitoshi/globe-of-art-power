@@ -44,3 +44,7 @@ yarn-error.log*
 
 # idea files
 .idea
+
+# local agent / preview artifacts
+.cursor-artifacts/
+.playwright-mcp/

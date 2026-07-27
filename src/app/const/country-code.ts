@@ -80,6 +80,7 @@ export const countyCodes = [
 const COUNTRY_CODE_ALIASES: Record<string, string> = {
   "United Arab Emirates": "UAE",
   AE: "UAE",
+  ITL: "IT",
 };
 
 const COUNTRY_AREA_KM2: Record<string, number> = {
@@ -156,9 +157,7 @@ export const normalizeCountryCode = (code: string) => {
 
 export const getCountryLocation = (code: string) => {
   const normalized = normalizeCountryCode(code);
-  const res = countyCodes.find((data) => data.code === normalized);
-  if (!res) console.log(code, " <- not found");
-  return res;
+  return countyCodes.find((data) => data.code === normalized);
 };
 
 export const getCountryAreaKm2 = (code: string) => {
